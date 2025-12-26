@@ -7,6 +7,8 @@ import {
   COLS,
   ITEMS_PER_ROW,
   TOTAL_ITEMS_PER_TICKET,
+  TicketValidationResult,
+  TicketsValidationSummary,
 } from "@/types/ticket";
 
 /**
@@ -60,6 +62,7 @@ function shuffleArray<T>(array: T[]): T[] {
 /**
  * Генерирует один билет по правилам Русского Лото
  * С мягким приоритетом для ещё не использованных треков
+ * ГАРАНТИРУЕТ: ровно 5 ячеек в каждой строке, не более 1 полной колонки
  */
 export function generateTicket(
   tracks: Track[],
@@ -67,59 +70,174 @@ export function generateTicket(
   priorityTracks?: Set<number>,
   priorityWeight: number = 0.3 // Мягкий приоритет (0 = нет, 1 = полный)
 ): Ticket {
-  // Шаг 1: Выбираем случайные треки для каждой колонки
-  const selectedByColumn: Track[][] = [];
+  const maxGlobalAttempts = 100;
+  
+  for (let globalAttempt = 0; globalAttempt < maxGlobalAttempts; globalAttempt++) {
+    // Шаг 1: Выбираем случайные треки для каждой колонки
+    const selectedByColumn: Track[][] = [];
 
+    for (let col = 0; col < COLS; col++) {
+      const columnTracks = getTracksForColumn(tracks, col);
+      
+      // Перемешиваем с мягким приоритетом для неиспользованных треков
+      let sortedTracks: Track[];
+      if (priorityTracks && priorityTracks.size > 0 && Math.random() < priorityWeight) {
+        const priority = columnTracks.filter((t) => priorityTracks.has(t.id));
+        const nonPriority = columnTracks.filter((t) => !priorityTracks.has(t.id));
+        sortedTracks = [...shuffleArray(priority), ...shuffleArray(nonPriority)];
+      } else {
+        sortedTracks = shuffleArray(columnTracks);
+      }
+      
+      selectedByColumn.push(sortedTracks);
+    }
+
+    // Шаг 2: Используем детерминированное распределение по колонкам
+    const columnCounts = generateValidColumnDistribution();
+
+    // Шаг 3: Выбираем конкретные треки для каждой колонки
+    const tracksPerColumn: Track[][] = columnCounts.map((count, col) => {
+      return selectedByColumn[col].slice(0, count);
+    });
+
+    // Шаг 4: Распределяем треки по строкам с гарантией корректности
+    const grid = distributeToGridStrict(tracksPerColumn);
+    
+    if (grid === null) {
+      // Если не удалось — пробуем ещё раз
+      continue;
+    }
+
+    // Создаем финальную структуру билета
+    const cells: TicketCell[][] = [];
+    for (let row = 0; row < ROWS; row++) {
+      cells[row] = [];
+      for (let col = 0; col < COLS; col++) {
+        cells[row][col] = {
+          track: grid[row][col],
+          row,
+          col,
+        };
+      }
+    }
+
+    const ticket: Ticket = {
+      id: `TICKET-${ticketNumber.toString().padStart(4, "0")}`,
+      cells,
+    };
+
+    // Финальная проверка валидности
+    const validation = validateTicketInternal(ticket);
+    if (validation.isValid) {
+      return ticket;
+    }
+  }
+
+  // Fallback: если после всех попыток не удалось, используем гарантированно рабочее распределение
+  return generateFallbackTicket(tracks, ticketNumber, priorityTracks);
+}
+
+/**
+ * Внутренняя быстрая валидация билета
+ */
+function validateTicketInternal(ticket: Ticket): { isValid: boolean } {
+  // Проверка количества ячеек в строках
+  for (let row = 0; row < ROWS; row++) {
+    const count = ticket.cells[row].filter(c => c.track !== null).length;
+    if (count !== ITEMS_PER_ROW) {
+      return { isValid: false };
+    }
+  }
+
+  // Проверка дубликатов
+  const ids = new Set<number>();
+  for (const row of ticket.cells) {
+    for (const cell of row) {
+      if (cell.track) {
+        if (ids.has(cell.track.id)) {
+          return { isValid: false };
+        }
+        ids.add(cell.track.id);
+      }
+    }
+  }
+
+  // Проверка полных колонок (не более 1)
+  let fullCols = 0;
+  for (let col = 0; col < COLS; col++) {
+    const colCount = ticket.cells.filter(row => row[col].track !== null).length;
+    if (colCount === ROWS) fullCols++;
+  }
+  if (fullCols > 1) {
+    return { isValid: false };
+  }
+
+  return { isValid: true };
+}
+
+/**
+ * Генерирует fallback билет с гарантированно корректным распределением
+ */
+function generateFallbackTicket(
+  tracks: Track[],
+  ticketNumber: number,
+  priorityTracks?: Set<number>
+): Ticket {
+  // Используем фиксированное распределение, которое точно работает
+  // 15 ячеек = 5+5+5 по строкам, распределено по 9 колонкам
+  // Пример: [2,2,2,1,2,2,2,1,1] = 15, и легко распределить по 5 в ряд
+  const fixedColumnCounts = [2, 2, 2, 1, 2, 2, 2, 1, 1];
+  
+  const selectedByColumn: Track[][] = [];
   for (let col = 0; col < COLS; col++) {
     const columnTracks = getTracksForColumn(tracks, col);
-    
-    // Перемешиваем с мягким приоритетом для неиспользованных треков
     let sortedTracks: Track[];
-    if (priorityTracks && priorityTracks.size > 0 && Math.random() < priorityWeight) {
-      // С вероятностью priorityWeight ставим приоритетные треки вперед
+    if (priorityTracks && priorityTracks.size > 0) {
       const priority = columnTracks.filter((t) => priorityTracks.has(t.id));
       const nonPriority = columnTracks.filter((t) => !priorityTracks.has(t.id));
       sortedTracks = [...shuffleArray(priority), ...shuffleArray(nonPriority)];
     } else {
-      // Полностью случайный порядок
       sortedTracks = shuffleArray(columnTracks);
     }
-    
     selectedByColumn.push(sortedTracks);
   }
 
-  // Шаг 2: Определяем количество элементов на колонку
-  let columnCounts: number[];
-  let attempts = 0;
-  const maxAttempts = 1000;
-
-  do {
-    columnCounts = distributeItemsToColumns();
-    attempts++;
-  } while (!canDistributeToRows(columnCounts) && attempts < maxAttempts);
-
-  if (attempts >= maxAttempts) {
-    columnCounts = [2, 2, 2, 1, 2, 1, 2, 2, 1];
-  }
-
-  // Шаг 3: Выбираем конкретные треки для каждой колонки
-  const tracksPerColumn: Track[][] = columnCounts.map((count, col) => {
+  const tracksPerColumn: Track[][] = fixedColumnCounts.map((count, col) => {
     return selectedByColumn[col].slice(0, count);
   });
 
-  // Шаг 4: Распределяем треки по строкам (с рандомизацией)
-  const grid = distributeToGridRandomized(tracksPerColumn);
+  // Строгое распределение по строкам
+  const grid: (Track | null)[][] = Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
+  const rowCounts = [0, 0, 0];
 
-  // Создаем финальную структуру билета
+  // Сначала размещаем колонки с 2 треками (их больше всего)
+  const colsByCount = Array.from({ length: COLS }, (_, i) => i)
+    .sort((a, b) => tracksPerColumn[b].length - tracksPerColumn[a].length);
+
+  for (const col of colsByCount) {
+    const colTracks = tracksPerColumn[col];
+    for (const track of colTracks) {
+      // Находим строку с минимальным заполнением
+      let bestRow = -1;
+      let minCount = ITEMS_PER_ROW + 1;
+      for (let r = 0; r < ROWS; r++) {
+        if (grid[r][col] === null && rowCounts[r] < ITEMS_PER_ROW && rowCounts[r] < minCount) {
+          minCount = rowCounts[r];
+          bestRow = r;
+        }
+      }
+      if (bestRow !== -1) {
+        grid[bestRow][col] = track;
+        rowCounts[bestRow]++;
+      }
+    }
+  }
+
   const cells: TicketCell[][] = [];
   for (let row = 0; row < ROWS; row++) {
     cells[row] = [];
     for (let col = 0; col < COLS; col++) {
-      cells[row][col] = {
-        track: grid[row][col],
-        row,
-        col,
-      };
+      cells[row][col] = { track: grid[row][col], row, col };
     }
   }
 
@@ -127,6 +245,41 @@ export function generateTicket(
     id: `TICKET-${ticketNumber.toString().padStart(4, "0")}`,
     cells,
   };
+}
+
+/**
+ * Генерирует валидное распределение элементов по колонкам
+ * Гарантирует, что сумма = 15 и распределение возможно разместить по строкам
+ */
+function generateValidColumnDistribution(): number[] {
+  // Валидные распределения, которые гарантированно позволяют 5 элементов в каждой строке
+  // Каждое распределение: сумма = 15, каждая колонка 0-3
+  const validDistributions = [
+    [2, 2, 2, 1, 2, 2, 2, 1, 1],
+    [2, 2, 1, 2, 2, 1, 2, 2, 1],
+    [1, 2, 2, 2, 1, 2, 2, 2, 1],
+    [2, 1, 2, 2, 2, 1, 2, 2, 1],
+    [2, 2, 2, 2, 1, 1, 2, 2, 1],
+    [1, 2, 2, 2, 2, 1, 2, 2, 1],
+    [2, 1, 2, 2, 2, 2, 1, 2, 1],
+    [2, 2, 1, 2, 2, 2, 1, 2, 1],
+    [1, 2, 2, 1, 2, 2, 2, 2, 1],
+    [2, 2, 2, 1, 2, 1, 2, 2, 1],
+    [2, 1, 2, 2, 1, 2, 2, 2, 1],
+    [1, 2, 2, 2, 2, 2, 1, 2, 1],
+    [2, 2, 1, 2, 1, 2, 2, 2, 1],
+    [2, 2, 2, 2, 2, 1, 1, 2, 1],
+    [1, 2, 1, 2, 2, 2, 2, 2, 1],
+    [2, 1, 2, 1, 2, 2, 2, 2, 1],
+    [3, 2, 1, 2, 1, 2, 2, 1, 1], // с одной полной колонкой (3)
+    [2, 3, 1, 2, 1, 2, 1, 2, 1],
+    [1, 2, 3, 1, 2, 2, 2, 1, 1],
+    [2, 1, 2, 3, 1, 2, 1, 2, 1],
+  ];
+
+  // Выбираем случайное распределение и перемешиваем его
+  const base = validDistributions[Math.floor(Math.random() * validDistributions.length)];
+  return shuffleArray([...base]);
 }
 
 /**
@@ -163,6 +316,78 @@ function distributeItemsToColumns(): number[] {
   }
 
   return counts;
+}
+
+/**
+ * Строгое распределение треков по сетке 3x9
+ * Гарантирует ровно 5 элементов в каждой строке
+ * Возвращает null если распределение невозможно
+ */
+function distributeToGridStrict(tracksPerColumn: Track[][]): (Track | null)[][] | null {
+  const grid: (Track | null)[][] = Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
+  const rowCounts = [0, 0, 0];
+  
+  // Собираем все треки с их колонками
+  const allPlacements: { track: Track; col: number }[] = [];
+  for (let col = 0; col < COLS; col++) {
+    for (const track of tracksPerColumn[col]) {
+      allPlacements.push({ track, col });
+    }
+  }
+
+  // Проверяем общее количество
+  if (allPlacements.length !== TOTAL_ITEMS_PER_TICKET) {
+    return null;
+  }
+
+  // Перемешиваем порядок размещения для рандомизации
+  const shuffledPlacements = shuffleArray(allPlacements);
+
+  // Сначала сортируем по "сложности" — треки из колонок с большим количеством элементов первыми
+  const colCounts = tracksPerColumn.map(t => t.length);
+  shuffledPlacements.sort((a, b) => colCounts[b.col] - colCounts[a.col]);
+
+  // Размещаем каждый трек
+  for (const { track, col } of shuffledPlacements) {
+    // Находим доступные строки для этой колонки
+    const availableRows: number[] = [];
+    for (let row = 0; row < ROWS; row++) {
+      if (grid[row][col] === null && rowCounts[row] < ITEMS_PER_ROW) {
+        availableRows.push(row);
+      }
+    }
+
+    if (availableRows.length === 0) {
+      return null; // Невозможно разместить
+    }
+
+    // Выбираем строку с минимальным заполнением (для баланса)
+    const minCount = Math.min(...availableRows.map(r => rowCounts[r]));
+    const bestRows = availableRows.filter(r => rowCounts[r] === minCount);
+    const selectedRow = bestRows[Math.floor(Math.random() * bestRows.length)];
+
+    grid[selectedRow][col] = track;
+    rowCounts[selectedRow]++;
+  }
+
+  // Проверяем результат
+  for (let row = 0; row < ROWS; row++) {
+    if (rowCounts[row] !== ITEMS_PER_ROW) {
+      return null;
+    }
+  }
+
+  // Проверяем количество полных колонок
+  let fullCols = 0;
+  for (let col = 0; col < COLS; col++) {
+    const colCount = grid.filter(row => row[col] !== null).length;
+    if (colCount === ROWS) fullCols++;
+  }
+  if (fullCols > 1) {
+    return null;
+  }
+
+  return grid;
 }
 
 /**
@@ -224,171 +449,6 @@ function distributeToGrid(tracksPerColumn: Track[][]): (Track | null)[][] {
       if (bestRow !== -1) {
         grid[bestRow][col] = track;
         rowCounts[bestRow]++;
-      }
-    }
-  }
-
-  return grid;
-}
-
-/**
- * Распределяет треки по сетке 3x9 с проверкой:
- * - Максимум 1 полностью заполненная колонка (все 3 ячейки) на билет
- * - В каждой строке ровно 5 элементов
- */
-function distributeToGridRandomized(tracksPerColumn: Track[][]): (Track | null)[][] {
-  let grid: (Track | null)[][] = Array(ROWS)
-    .fill(null)
-    .map(() => Array(COLS).fill(null));
-
-  let attempts = 0;
-  const maxAttempts = 200;
-  let success = false;
-
-  while (!success && attempts < maxAttempts) {
-    attempts++;
-    
-    grid = Array(ROWS)
-      .fill(null)
-      .map(() => Array(COLS).fill(null));
-
-    const rowCounts = [0, 0, 0];
-    const columnQueues = tracksPerColumn.map((tracks) => [...tracks]);
-
-    // Подсчитываем колонки с 3 треками
-    const columnsWithThreeTracks: number[] = [];
-    for (let col = 0; col < COLS; col++) {
-      if (columnQueues[col].length === 3) {
-        columnsWithThreeTracks.push(col);
-      }
-    }
-
-    // Если колонок с 3 треками больше 1, выбираем только одну для полного заполнения
-    let fullColumnIndex = -1;
-    if (columnsWithThreeTracks.length > 0) {
-      // Случайно выбираем одну колонку, которая будет заполнена полностью
-      fullColumnIndex = columnsWithThreeTracks[Math.floor(Math.random() * columnsWithThreeTracks.length)];
-    }
-
-    // Перемешиваем порядок обработки колонок
-    const shuffledCols = shuffleArray(Array.from({ length: COLS }, (_, i) => i));
-    
-    success = true;
-
-    for (const col of shuffledCols) {
-      const tracks = columnQueues[col];
-      const tracksInColumn = tracks.length;
-
-      if (tracksInColumn === 0) continue;
-
-      // Если в колонке 3 трека и это НЕ выбранная полная колонка
-      if (tracksInColumn === 3 && col !== fullColumnIndex) {
-        // Заполняем только 2 из 3 строк
-        const availableRows = [0, 1, 2];
-        const shuffledRows = shuffleArray(availableRows);
-
-        for (let trackIndex = 0; trackIndex < tracks.length; trackIndex++) {
-          const track = tracks[trackIndex];
-          
-          // Ищем свободную строку среди доступных
-          let placed = false;
-          for (const row of shuffledRows) {
-            if (grid[row][col] === null && rowCounts[row] < ITEMS_PER_ROW) {
-              grid[row][col] = track;
-              rowCounts[row]++;
-              placed = true;
-              break;
-            }
-          }
-          
-          if (!placed && trackIndex < 2) {
-            // Если не смогли разместить первые 2 трека - неудача
-            success = false;
-            break;
-          }
-          
-          // Третий трек просто пропускаем если не удалось разместить
-        }
-      } else {
-        // Для всех остальных колонок (или выбранной полной) - обычное размещение
-        for (const track of tracks) {
-          // Проверяем, какие строки свободны в этой колонке
-          const availableRows: number[] = [];
-          for (let row = 0; row < ROWS; row++) {
-            if (grid[row][col] === null && rowCounts[row] < ITEMS_PER_ROW) {
-              availableRows.push(row);
-            }
-          }
-
-          if (availableRows.length > 0) {
-            // Среди доступных выбираем те, где меньше всего элементов
-            const minCount = Math.min(...availableRows.map(r => rowCounts[r]));
-            const minRows = availableRows.filter(r => rowCounts[r] === minCount);
-            const selectedRow = minRows[Math.floor(Math.random() * minRows.length)];
-            
-            grid[selectedRow][col] = track;
-            rowCounts[selectedRow]++;
-          } else {
-            success = false;
-            break;
-          }
-        }
-      }
-
-      if (!success) break;
-    }
-
-    // Проверяем, что в каждой строке ровно 5 элементов
-    if (success) {
-      for (let row = 0; row < ROWS; row++) {
-        const count = grid[row].filter(cell => cell !== null).length;
-        if (count !== ITEMS_PER_ROW) {
-          success = false;
-          break;
-        }
-      }
-    }
-
-    // Проверяем количество полностью заполненных колонок
-    if (success) {
-      let fullColumnsCount = 0;
-      for (let col = 0; col < COLS; col++) {
-        const colCount = grid.filter(row => row[col] !== null).length;
-        if (colCount === ROWS) {
-          fullColumnsCount++;
-        }
-      }
-      
-      // Допускаем максимум 1 полностью заполненную колонку
-      if (fullColumnsCount > 1) {
-        success = false;
-      }
-    }
-  }
-
-  if (!success) {
-    // Fallback: пытаемся еще раз с более простой логикой
-    grid = Array(ROWS)
-      .fill(null)
-      .map(() => Array(COLS).fill(null));
-
-    const rowCounts = [0, 0, 0];
-    const columnQueues = tracksPerColumn.map((tracks) => [...tracks]);
-
-    // Сортируем колонки: сначала с меньшим количеством треков
-    const sortedCols = Array.from({ length: COLS }, (_, i) => i)
-      .sort((a, b) => columnQueues[a].length - columnQueues[b].length);
-
-    for (const col of sortedCols) {
-      const tracks = columnQueues[col];
-      for (const track of tracks) {
-        for (let row = 0; row < ROWS; row++) {
-          if (rowCounts[row] < ITEMS_PER_ROW && grid[row][col] === null) {
-            grid[row][col] = track;
-            rowCounts[row]++;
-            break;
-          }
-        }
       }
     }
   }
@@ -553,5 +613,81 @@ export function validateInput(input: string): {
     isValid: true,
     trackCount: 90,
     message: "Готово к генерации билетов!",
+  };
+}
+
+// === ВАЛИДАЦИЯ БИЛЕТОВ ===
+
+/**
+ * Валидирует один билет по всем критериям:
+ * 1. В каждой строке ровно 5 заполненных ячеек
+ * 2. Нет дублирующихся треков
+ * 3. Не более 1 полностью заполненной колонки
+ */
+export function validateTicket(ticket: Ticket): TicketValidationResult {
+  const errors: TicketValidationResult["errors"] = {
+    invalidRowCounts: [],
+    duplicateTracks: [],
+    fullColumnsCount: 0,
+    fullColumnsExceeded: false,
+  };
+
+  // Проверка 1: Ровно 5 ячеек в каждой строке
+  for (let row = 0; row < ROWS; row++) {
+    const filledCount = ticket.cells[row].filter(cell => cell.track !== null).length;
+    if (filledCount !== ITEMS_PER_ROW) {
+      errors.invalidRowCounts.push({ row, count: filledCount });
+    }
+  }
+
+  // Проверка 2: Нет дубликатов треков
+  const trackIds = new Set<number>();
+  const duplicates = new Set<number>();
+  
+  for (const row of ticket.cells) {
+    for (const cell of row) {
+      if (cell.track) {
+        if (trackIds.has(cell.track.id)) {
+          duplicates.add(cell.track.id);
+        }
+        trackIds.add(cell.track.id);
+      }
+    }
+  }
+  errors.duplicateTracks = Array.from(duplicates);
+
+  // Проверка 3: Не более 1 полностью заполненной колонки
+  for (let col = 0; col < COLS; col++) {
+    const colFilledCount = ticket.cells.filter(row => row[col].track !== null).length;
+    if (colFilledCount === ROWS) {
+      errors.fullColumnsCount++;
+    }
+  }
+  errors.fullColumnsExceeded = errors.fullColumnsCount > 1;
+
+  const isValid = 
+    errors.invalidRowCounts.length === 0 &&
+    errors.duplicateTracks.length === 0 &&
+    !errors.fullColumnsExceeded;
+
+  return {
+    isValid,
+    ticketId: ticket.id,
+    errors,
+  };
+}
+
+/**
+ * Валидирует все билеты и возвращает сводку
+ */
+export function validateTickets(tickets: Ticket[]): TicketsValidationSummary {
+  const results = tickets.map(validateTicket);
+  const invalidResults = results.filter(r => !r.isValid);
+
+  return {
+    totalTickets: tickets.length,
+    validTickets: results.filter(r => r.isValid).length,
+    invalidTickets: invalidResults.length,
+    invalidDetails: invalidResults,
   };
 }

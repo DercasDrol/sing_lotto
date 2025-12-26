@@ -34,3 +34,30 @@ export const ROWS = 3;
 export const COLS = 9;
 export const ITEMS_PER_ROW = 5;
 export const TOTAL_ITEMS_PER_TICKET = 15;
+
+// === Типы для валидации билетов ===
+
+export interface TicketValidationErrors {
+  /** Строки с неправильным количеством заполненных ячеек (должно быть 5) */
+  invalidRowCounts: { row: number; count: number }[];
+  /** ID треков, которые дублируются в билете */
+  duplicateTracks: number[];
+  /** Количество полностью заполненных колонок (все 3 ячейки) */
+  fullColumnsCount: number;
+  /** Превышен лимит полностью заполненных колонок (>1) */
+  fullColumnsExceeded: boolean;
+}
+
+export interface TicketValidationResult {
+  isValid: boolean;
+  ticketId: string;
+  errors: TicketValidationErrors;
+}
+
+export interface TicketsValidationSummary {
+  totalTickets: number;
+  validTickets: number;
+  invalidTickets: number;
+  /** Детали по каждому невалидному билету */
+  invalidDetails: TicketValidationResult[];
+}

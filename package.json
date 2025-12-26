@@ -4,10 +4,12 @@
   "private": true,
   "description": "Генератор билетов для музыкального бинго в стиле Русского Лото",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --port 3010",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "npx tsx src/lib/ticketLogic.test.ts",
+    "test:watch": "npx tsx watch src/lib/ticketLogic.test.ts"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",

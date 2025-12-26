@@ -5,12 +5,14 @@ import { InputSection } from "@/components/InputSection";
 import { TicketGrid } from "@/components/TicketGrid";
 import { ExportButton } from "@/components/ExportButton";
 import { MissedTracksSection } from "@/components/MissedTracksSection";
-import { Ticket, Track } from "@/types/ticket";
+import { ValidationStatus } from "@/components/ValidationStatus";
+import { Ticket, Track, TicketsValidationSummary } from "@/types/ticket";
 import {
   parseTracksFromInput,
   generateTickets,
   getMissedTracks,
   validateInput,
+  validateTickets,
 } from "@/lib/ticketLogic";
 import { motion } from "framer-motion";
 import { Music, Ticket as TicketIcon } from "lucide-react";
@@ -112,6 +114,7 @@ export default function Home() {
   const [ticketCount, setTicketCount] = useState(6);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [missedTracks, setMissedTracks] = useState<Track[]>([]);
+  const [ticketsValidation, setTicketsValidation] = useState<TicketsValidationSummary | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showTrackNumbers, setShowTrackNumbers] = useState(true);
   const [ticketTitle, setTicketTitle] = useState("♪ МУЗЫКАЛЬНОЕ ЛОТО");
@@ -129,8 +132,11 @@ export default function Home() {
       const tracks = parseTracksFromInput(tracksInput);
       const generatedTickets = generateTickets(tracks, ticketCount);
       const missed = getMissedTracks(tracks, generatedTickets);
+      const ticketValidation = validateTickets(generatedTickets);
+      
       setTickets(generatedTickets);
       setMissedTracks(missed);
+      setTicketsValidation(ticketValidation);
       setIsGenerating(false);
     }, 500);
   }, [tracksInput, ticketCount, validation.isValid]);
@@ -185,6 +191,9 @@ export default function Home() {
 
           {/* Предупреждение о непопавших треках */}
           <MissedTracksSection missedTracks={missedTracks} />
+
+          {/* Статус валидации билетов */}
+          <ValidationStatus validation={ticketsValidation} />
 
           {/* Превью билетов */}
           <TicketGrid tickets={tickets} showTrackNumbers={showTrackNumbers} ticketTitle={ticketTitle} fontSize={fontSize} />
