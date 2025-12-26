@@ -1,100 +1,204 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useMemo, useCallback } from "react";
+import { InputSection } from "@/components/InputSection";
+import { TicketGrid } from "@/components/TicketGrid";
+import { ExportButton } from "@/components/ExportButton";
+import { MissedTracksSection } from "@/components/MissedTracksSection";
+import { Ticket, Track } from "@/types/ticket";
+import {
+  parseTracksFromInput,
+  generateTickets,
+  getMissedTracks,
+  validateInput,
+} from "@/lib/ticketLogic";
+import { motion } from "framer-motion";
+import { Music, Ticket as TicketIcon } from "lucide-react";
+
+// Пример треков для демонстрации
+const EXAMPLE_TRACKS = `Queen - Bohemian Rhapsody
+ABBA - Dancing Queen
+Michael Jackson - Thriller
+The Beatles - Hey Jude
+Freddie Mercury - Living On My Own
+Madonna - Like a Prayer
+Prince - Purple Rain
+Whitney Houston - I Will Always Love You
+Elton John - Rocket Man
+David Bowie - Heroes
+Led Zeppelin - Stairway to Heaven
+Pink Floyd - Wish You Were Here
+Nirvana - Smells Like Teen Spirit
+AC/DC - Highway to Hell
+Guns N' Roses - Sweet Child O' Mine
+Bon Jovi - Livin' on a Prayer
+U2 - With or Without You
+Aerosmith - I Don't Want to Miss a Thing
+The Rolling Stones - Paint It Black
+Eagles - Hotel California
+Metallica - Nothing Else Matters
+Red Hot Chili Peppers - Californication
+Coldplay - Yellow
+Green Day - Boulevard of Broken Dreams
+Linkin Park - In the End
+Oasis - Wonderwall
+Radiohead - Creep
+The Police - Every Breath You Take
+Sting - Shape of My Heart
+Phil Collins - In the Air Tonight
+Genesis - Invisible Touch
+Dire Straits - Sultans of Swing
+Eric Clapton - Tears in Heaven
+Bee Gees - Stayin' Alive
+Donna Summer - Hot Stuff
+Gloria Gaynor - I Will Survive
+Blondie - Heart of Glass
+Cyndi Lauper - Girls Just Want to Have Fun
+Tina Turner - What's Love Got to Do with It
+Bonnie Tyler - Total Eclipse of the Heart
+Bryan Adams - Summer of '69
+Journey - Don't Stop Believin'
+Foreigner - I Want to Know What Love Is
+Boston - More Than a Feeling
+Styx - Come Sail Away
+REO Speedwagon - Keep On Loving You
+Chicago - If You Leave Me Now
+Hall & Oates - Maneater
+Kenny Loggins - Footloose
+Toto - Africa
+Survivor - Eye of the Tiger
+Europe - The Final Countdown
+A-ha - Take On Me
+Duran Duran - Hungry Like the Wolf
+Tears for Fears - Everybody Wants to Rule the World
+Depeche Mode - Enjoy the Silence
+Pet Shop Boys - West End Girls
+New Order - Blue Monday
+The Cure - Friday I'm in Love
+R.E.M. - Losing My Religion
+Talking Heads - Psycho Killer
+The Smiths - There Is a Light That Never Goes Out
+Joy Division - Love Will Tear Us Apart
+Blondie - Call Me
+The Clash - Should I Stay or Should I Go
+Sex Pistols - Anarchy in the U.K.
+Ramones - Blitzkrieg Bop
+The Stooges - I Wanna Be Your Dog
+Iggy Pop - The Passenger
+Lou Reed - Walk on the Wild Side
+Velvet Underground - Sweet Jane
+Patti Smith - Because the Night
+Bruce Springsteen - Born to Run
+Tom Petty - Free Fallin'
+Bob Dylan - Like a Rolling Stone
+Neil Young - Heart of Gold
+Fleetwood Mac - Dreams
+Stevie Nicks - Edge of Seventeen
+Heart - Barracuda
+Pat Benatar - Love Is a Battlefield
+Joan Jett - I Love Rock 'n' Roll
+Blondie - The Tide Is High
+Eurythmics - Sweet Dreams
+Annie Lennox - Walking on Broken Glass
+George Michael - Careless Whisper
+Wham! - Wake Me Up Before You Go-Go
+Culture Club - Karma Chameleon
+Spandau Ballet - True
+Simple Minds - Don't You (Forget About Me)
+INXS - Need You Tonight`;
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [tracksInput, setTracksInput] = useState(EXAMPLE_TRACKS);
+  const [ticketCount, setTicketCount] = useState(6);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [missedTracks, setMissedTracks] = useState<Track[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [showTrackNumbers, setShowTrackNumbers] = useState(true);
+  const [ticketTitle, setTicketTitle] = useState("♪ МУЗЫКАЛЬНОЕ ЛОТО");
+  const [fontSize, setFontSize] = useState(9); // Размер шрифта по умолчанию
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const validation = useMemo(() => validateInput(tracksInput), [tracksInput]);
+
+  const handleGenerate = useCallback(() => {
+    if (!validation.isValid) return;
+
+    setIsGenerating(true);
+
+    // Небольшая задержка для анимации
+    setTimeout(() => {
+      const tracks = parseTracksFromInput(tracksInput);
+      const generatedTickets = generateTickets(tracks, ticketCount);
+      const missed = getMissedTracks(tracks, generatedTickets);
+      setTickets(generatedTickets);
+      setMissedTracks(missed);
+      setIsGenerating(false);
+    }, 500);
+  }, [tracksInput, ticketCount, validation.isValid]);
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      {/* Хедер */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center">
+                <Music className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-slate-900">Singing Lotto</h1>
+                <p className="text-xs text-slate-500">Генератор музыкальных билетов</p>
+              </div>
+            </div>
+            
+            {tickets.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+              >
+                <ExportButton tickets={tickets} showTrackNumbers={showTrackNumbers} ticketTitle={ticketTitle} fontSize={fontSize} />
+              </motion.div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Основной контент */}
+      <main className="max-w-6xl mx-auto px-4 py-8">
+        <div className="grid gap-8">
+          {/* Форма ввода */}
+          <InputSection
+            tracksInput={tracksInput}
+            setTracksInput={setTracksInput}
+            ticketCount={ticketCount}
+            setTicketCount={setTicketCount}
+            showTrackNumbers={showTrackNumbers}
+            setShowTrackNumbers={setShowTrackNumbers}
+            ticketTitle={ticketTitle}
+            setTicketTitle={setTicketTitle}
+            fontSize={fontSize}
+            setFontSize={setFontSize}
+            onGenerate={handleGenerate}
+            validation={validation}
+            isGenerating={isGenerating}
+          />
+
+          {/* Предупреждение о непопавших треках */}
+          <MissedTracksSection missedTracks={missedTracks} />
+
+          {/* Превью билетов */}
+          <TicketGrid tickets={tickets} showTrackNumbers={showTrackNumbers} ticketTitle={ticketTitle} fontSize={fontSize} />
         </div>
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+
+      {/* Футер */}
+      <footer className="bg-white border-t border-slate-200 mt-auto py-6">
+        <div className="max-w-6xl mx-auto px-4 text-center text-sm text-slate-500">
+          <p className="flex items-center justify-center gap-2">
+            <TicketIcon className="h-4 w-4" />
+            Singing Lotto — Музыкальное бинго в стиле Русского Лото
+          </p>
+        </div>
       </footer>
     </div>
   );

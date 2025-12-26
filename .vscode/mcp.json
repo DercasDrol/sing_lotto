@@ -1,0 +1,42 @@
+{
+    "inputs": [
+        {
+            "type": "promptString",
+            "id": "n8n-mcp-token",
+            "description": "Your n8n-MCP AUTH_TOKEN",
+            "password": true
+        }
+    ],
+    "servers": {
+        "n8n-mcp": {
+            "type": "http",
+            "url": "https://n8n-mcp.fan-side-of-mars.ovh/mcp",
+            "headers": {
+                "Authorization": "Bearer ${input:n8n-mcp-token}"
+            }
+        },
+        
+        "sequential-thinking": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@modelcontextprotocol/server-sequential-thinking"
+            ]
+        },
+        "interactive-mcp": {
+            "url": "http://localhost:8090/mcp"
+        },
+        "API Doc-CometAPI": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "apidog-mcp-server@latest",
+                "--site-id=748612"
+            ]
+        },
+        "chrome-devtools": {
+            "command": "npx",
+            "args": ["chrome-devtools-mcp@latest"]
+        }
+    }
+}

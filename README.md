@@ -1,36 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎵 Singing Lotto
 
-## Getting Started
+Генератор билетов для музыкального бинго в стиле "Русского Лото".
 
-First, run the development server:
+## Описание
+
+Веб-приложение для создания билетов музыкального бинго. Вы вводите 90 треков/артистов, а система генерирует уникальные билеты в формате 3x9 (как в классическом Русском Лото).
+
+### Особенности
+
+- 📋 Формат билета: 3 ряда × 9 колонок (27 ячеек)
+- 🎯 15 треков на билет (5 в каждом ряду)
+- 🎲 Случайная генерация уникальных билетов
+- 📄 Экспорт в PDF (2 билета на страницу А4)
+- 📱 Адаптивный дизайн
+- ✨ Анимации с Framer Motion
+
+## Технологии
+
+- **Next.js 14** (App Router)
+- **TypeScript**
+- **Tailwind CSS**
+- **Shadcn UI** — компоненты интерфейса
+- **jsPDF + html2canvas** — генерация PDF
+- **Framer Motion** — анимации
+- **Lucide React** — иконки
+
+## Алгоритм генерации
+
+Каждый билет следует правилам классического Русского Лото:
+
+| Колонка | Диапазон ID |
+|---------|-------------|
+| 1       | 1-9         |
+| 2       | 10-19       |
+| 3       | 20-29       |
+| 4       | 30-39       |
+| 5       | 40-49       |
+| 6       | 50-59       |
+| 7       | 60-69       |
+| 8       | 70-79       |
+| 9       | 80-90       |
+
+## Быстрый старт
 
 ```bash
+# Установка зависимостей
+npm install
+
+# Запуск dev-сервера
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# Открыть в браузере
+# http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Структура проекта
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+src/
+├── app/
+│   ├── layout.tsx      # Корневой layout
+│   ├── page.tsx        # Главная страница
+│   └── globals.css     # Глобальные стили
+├── components/
+│   ├── ui/             # Shadcn UI компоненты
+│   ├── InputSection.tsx
+│   ├── Ticket.tsx
+│   ├── TicketGrid.tsx
+│   └── ExportButton.tsx
+├── lib/
+│   ├── ticketLogic.ts  # Алгоритм генерации билетов
+│   └── utils.ts        # Утилиты
+└── types/
+    └── ticket.ts       # TypeScript типы
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Использование
 
-## Learn More
+1. Введите 90 треков/артистов (по одному на строку)
+2. Укажите количество билетов (1-100)
+3. Нажмите "Сгенерировать"
+4. Просмотрите билеты в превью
+5. Скачайте PDF для печати
 
-To learn more about Next.js, take a look at the following resources:
+## Лицензия
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT
