@@ -6,10 +6,11 @@ import { Download, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import jsPDF from "jspdf";
 
-// Шрифт Roboto в base64 (будет загружен динамически)
-let robotoFontLoaded = false;
+// Шрифты в base64 (будут загружены динамически)
+let fontsLoaded = false;
 let robotoFontBase64: string | null = null;
 let robotoBoldBase64: string | null = null;
+let notoSymbolsBase64: string | null = null; // Для символов ♪ 🎺 и т.д.
 
 interface ExportButtonProps {
   tickets: TicketType[];
@@ -20,15 +21,15 @@ interface ExportButtonProps {
 
 export function ExportButton({ tickets, showTrackNumbers = true, ticketTitle = "♪ МУЗЫКАЛЬНОЕ ЛОТО", fontSize = 9 }: ExportButtonProps) {
   const [isExporting, setIsExporting] = useState(false);
-  const [fontLoaded, setFontLoaded] = useState(robotoFontLoaded);
+  const [fontLoaded, setFontLoaded] = useState(fontsLoaded);
   const [fontError, setFontError] = useState(false);
 
-  // Загружаем шрифт при монтировании компонента
+  // Загружаем шрифты при монтировании компонента
   useEffect(() => {
-    if (!robotoFontLoaded && !fontError) {
-      loadRobotoFonts()
+    if (!fontsLoaded && !fontError) {
+      loadAllFonts()
         .then(() => {
-          robotoFontLoaded = true;
+          fontsLoaded = true;
           setFontLoaded(true);
         })
         .catch(() => {
@@ -64,6 +65,13 @@ export function ExportButton({ tickets, showTrackNumbers = true, ticketTitle = "
         pdf.setFont("Roboto");
       } else {
         console.warn("Roboto font not loaded, using default font");
+      }
+      
+      // Добавляем шрифт для символов (♪, 🎺 и т.д.)
+      if (notoSymbolsBase64) {
+        pdf.addFileToVFS("NotoSansSymbols.ttf", notoSymbolsBase64);
+        pdf.addFont("NotoSansSymbols.ttf", "NotoSymbols", "normal");
+        console.log("✓ Noto Symbols font added to PDF");
       }
 
       // A4 landscape: 297mm x 210mm
@@ -141,17 +149,20 @@ export function ExportButton({ tickets, showTrackNumbers = true, ticketTitle = "
 }
 
 /**
- * Загружает шрифты Roboto (Regular и Bold) с поддержкой кириллицы
+ * Загружает все необходимые шрифты: Roboto (кириллица) и Noto Sans Symbols (спецсимволы)
  */
-async function loadRobotoFonts(): Promise<void> {
-  // Используем jsDelivr который поддерживает CORS для GitHub файлов
-  const regularUrl = "https://cdn.jsdelivr.net/gh/googlefonts/roboto@main/src/hinted/Roboto-Regular.ttf";
-  const boldUrl = "https://cdn.jsdelivr.net/gh/googlefonts/roboto@main/src/hinted/Roboto-Bold.ttf";
+async function loadAllFonts(): Promise<void> {
+  // URL'ы шрифтов через jsDelivr CDN
+  const robotoRegularUrl = "https://cdn.jsdelivr.net/gh/googlefonts/roboto@main/src/hinted/Roboto-Regular.ttf";
+  const robotoBoldUrl = "https://cdn.jsdelivr.net/gh/googlefonts/roboto@main/src/hinted/Roboto-Bold.ttf";
+  // Noto Sans Symbols содержит музыкальные символы ♪ ♫ и многие другие
+  const notoSymbolsUrl = "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/notosanssymbols/NotoSansSymbols%5Bwght%5D.ttf";
   
-  // Загружаем Regular и Bold параллельно
+  // Загружаем все шрифты параллельно
   const results = await Promise.allSettled([
-    loadSingleFont(regularUrl, "Regular"),
-    loadSingleFont(boldUrl, "Bold")
+    loadSingleFont(robotoRegularUrl, "Roboto Regular"),
+    loadSingleFont(robotoBoldUrl, "Roboto Bold"),
+    loadSingleFont(notoSymbolsUrl, "Noto Sans Symbols")
   ]);
   
   // Обрабатываем результаты
@@ -160,15 +171,21 @@ async function loadRobotoFonts(): Promise<void> {
     console.log("✓ Roboto Regular loaded successfully");
   } else {
     console.error("✗ Failed to load Roboto Regular:", results[0].reason);
-    throw results[0].reason;
+    throw results[0].reason; // Roboto обязателен
   }
   
   if (results[1].status === 'fulfilled') {
     robotoBoldBase64 = results[1].value;
     console.log("✓ Roboto Bold loaded successfully");
   } else {
-    console.warn("✗ Failed to load Roboto Bold (will use Regular for titles):", results[1].reason);
-    // Не бросаем ошибку - Bold опционален
+    console.warn("✗ Failed to load Roboto Bold (will use Regular):", results[1].reason);
+  }
+  
+  if (results[2].status === 'fulfilled') {
+    notoSymbolsBase64 = results[2].value;
+    console.log("✓ Noto Sans Symbols loaded successfully");
+  } else {
+    console.warn("✗ Failed to load Noto Sans Symbols (music notes may not render):", results[2].reason);
   }
 }
 
@@ -255,40 +272,60 @@ function renderTicketToPDF(
   // === ЗАГОЛОВОК ===
   pdf.setTextColor(15, 23, 42); // slate-900
   const titleFontSize = Math.min(20, maxFontSize * 1.8); // Увеличен максимум
+  const symbolFontSize = titleFontSize * 1.3; // Символы на 30% больше для лучшей видимости
   pdf.setFontSize(titleFontSize);
   
-  // Используем жирный стиль если доступен (для Roboto)
-  if (robotoBoldBase64) {
-    try {
-      pdf.setFont("Roboto", "bold");
-    } catch {
-      // Если bold не доступен, игнорируем
+  // Вычисляем позицию Y для центрирования текста (подняли выше)
+  // baseline текста внизу, уменьшаем смещение
+  const titleY = innerY + headerHeight / 2 + titleFontSize * 0.08;
+  
+  // Рендерим заголовок с поддержкой смешанных шрифтов (символы + кириллица)
+  let titleX = innerX + 4;
+  
+  // Разбиваем текст на сегменты: символы и обычный текст
+  // Символы Unicode: музыкальные ноты, эмодзи и т.д.
+  const symbolPattern = /([♪♫🎵🎶🎺🎸🎹🎷🎻🥁🎤🎧🎼]+)/g;
+  const segments = ticketTitle.split(symbolPattern);
+  
+  for (const segment of segments) {
+    if (!segment) continue;
+    
+    const isSymbol = symbolPattern.test(segment);
+    // Сбрасываем pattern сразу после теста
+    symbolPattern.lastIndex = 0;
+    
+    if (isSymbol) {
+      // Это символы - используем Noto Sans Symbols если загружен, увеличенный размер
+      if (notoSymbolsBase64) {
+        try {
+          pdf.setFont("NotoSymbols", "normal");
+          pdf.setFontSize(symbolFontSize); // Увеличенный размер для символов
+          // Faux Bold: рисуем символ трижды со смещением для жирности
+          pdf.text(segment, titleX, titleY);
+          pdf.text(segment, titleX + 0.2, titleY); // Смещение вправо
+          pdf.text(segment, titleX + 0.1, titleY - 0.1); // Смещение по диагонали
+        } catch (e) {
+          console.warn("Failed to set NotoSymbols font:", e);
+          pdf.text(segment, titleX, titleY);
+        }
+      } else {
+        pdf.text(segment, titleX, titleY);
+      }
+    } else {
+      // Обычный текст - используем Roboto Bold
+      if (robotoBoldBase64) {
+        try {
+          pdf.setFont("Roboto", "bold");
+        } catch {
+          try { pdf.setFont("Roboto", "normal"); } catch { /* ignore */ }
+        }
+      }
+      pdf.setFontSize(titleFontSize); // Обычный размер для текста
+      pdf.text(segment, titleX, titleY);
     }
+    
+    titleX += pdf.getTextWidth(segment);
   }
-  
-  // Заменяем символ ноты ♪ на символ * который точно есть в Roboto
-  // Или можем нарисовать ноту как графический элемент
-  let safeTitle = ticketTitle;
-  const hasNoteSymbol = /[♪♫🎵🎶]/.test(ticketTitle);
-  safeTitle = safeTitle.replace(/[♪♫🎵🎶]/g, "");
-  
-  // Вычисляем позицию для вертикального центрирования текста
-  // Размер шрифта в мм: fontSize * 0.3528 (приблизительно)
-  const fontHeightMm = titleFontSize * 0.3528;
-  // Центр шапки минус половина высоты текста плюс смещение к baseline
-  const titleY = innerY + (headerHeight + fontHeightMm * 0.5) / 2;
-  
-  // Если был символ ноты - рисуем его как графику
-  let titleStartX = innerX + 4;
-  if (hasNoteSymbol) {
-    // Рисуем музыкальную ноту программно (размер примерно как заглавная буква)
-    const noteSize = titleFontSize * 0.45; // Размер ноты
-    // Центрируем ноту по вертикали с текстом (поднимаем выше)
-    drawMusicNote(pdf, titleStartX + noteSize * 0.5, innerY + headerHeight / 2 - noteSize * 0.3, noteSize);
-    titleStartX += noteSize * 0.8 + 2;
-  }
-  
-  pdf.text(safeTitle.trim(), titleStartX, titleY);
   
   // Возвращаем обычный стиль для остального текста
   if (robotoFontBase64) {
@@ -306,10 +343,10 @@ function renderTicketToPDF(
   const idTextWidth = pdf.getTextWidth(idText);
   const idPadding = 3; // Паддинг
   const idBoxWidth = idTextWidth + idPadding * 2;
-  const idBoxHeight = 5; // Компактная высота
+  const idBoxHeight = 5.5; // Компактная высота
   const idX = innerX + innerWidth - idBoxWidth - 4;
-  // Центрируем бокс по вертикали в шапке (немного выше центра)
-  const idY = innerY + (headerHeight - idBoxHeight) / 2 - 0.5;
+  // Центрируем бокс по вертикали в шапке (поднимаем на 2мм)
+  const idY = innerY + (headerHeight - idBoxHeight) / 2 - 1;
   
   pdf.setFillColor(255, 255, 255);
   pdf.setDrawColor(0, 0, 0); // Чёрная рамка
@@ -317,8 +354,8 @@ function renderTicketToPDF(
   pdf.roundedRect(idX, idY, idBoxWidth, idBoxHeight, 1.5, 1.5, "FD");
   pdf.setTextColor(0, 0, 0); // Чёрный текст
   
-  // Центрируем текст ID внутри бокса (baseline + примерно 70% высоты шрифта)
-  const idTextY = idY + idBoxHeight / 2 + idFontSize * 0.25;
+  // Центрируем текст ID внутри бокса (точно по центру)
+  const idTextY = idY + idBoxHeight / 2 + idFontSize * 0.15;
   pdf.text(idText, idX + idPadding, idTextY);
 
   // === ТАБЛИЦА ===
@@ -474,49 +511,4 @@ function splitTextToLines(pdf: jsPDF, text: string, maxWidth: number): string[] 
 
   // Ограничиваем количество строк до 3
   return lines.slice(0, 3);
-}
-
-/**
- * Рисует музыкальную ноту (♪) программно - красивая версия с кривыми Безье
- * @param pdf - jsPDF instance
- * @param x - центр ноты по X
- * @param y - центр ноты по Y  
- * @param size - размер ноты (примерно высота заглавной буквы)
- */
-function drawMusicNote(pdf: jsPDF, x: number, y: number, size: number): void {
-  // Устанавливаем чёрный цвет для ноты
-  pdf.setFillColor(15, 23, 42);
-  pdf.setDrawColor(15, 23, 42);
-  
-  // Масштабируем все элементы относительно size
-  const s = size / 12; // базовый размер 12
-  
-  // Головка ноты - эллипс под углом
-  const headCenterX = x - 1 * s;
-  const headCenterY = y + 4 * s;
-  const headRx = 2.2 * s;  // радиус по X
-  const headRy = 1.6 * s;  // радиус по Y
-  
-  // Рисуем заполненный эллипс (головка)
-  pdf.ellipse(headCenterX, headCenterY, headRx, headRy, 'F');
-  
-  // Штиль (вертикальная линия справа от головки)
-  const stemX = headCenterX + headRx - 0.3 * s;
-  const stemBottom = headCenterY - headRy * 0.3;
-  const stemTop = y - 5 * s;
-  
-  // Рисуем штиль
-  pdf.setLineWidth(0.7 * s);
-  pdf.line(stemX, stemBottom, stemX, stemTop);
-  
-  // Флажок - красивая изогнутая линия
-  // Используем несколько линий для имитации кривой
-  pdf.setLineWidth(0.6 * s);
-  const flagX = stemX;
-  const flagY = stemTop;
-  
-  // Рисуем изогнутый флажок серией точек
-  pdf.line(flagX, flagY, flagX + 1.5 * s, flagY + 2 * s);
-  pdf.line(flagX + 1.5 * s, flagY + 2 * s, flagX + 2.5 * s, flagY + 4 * s);
-  pdf.line(flagX + 2.5 * s, flagY + 4 * s, flagX + 2.2 * s, flagY + 5 * s);
 }
