@@ -116,9 +116,9 @@ export default function Home() {
   const [missedTracks, setMissedTracks] = useState<Track[]>([]);
   const [ticketsValidation, setTicketsValidation] = useState<TicketsValidationSummary | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [showTrackNumbers, setShowTrackNumbers] = useState(true);
+  const [showTrackNumbers, setShowTrackNumbers] = useState(false); // Выключен по умолчанию
   const [ticketTitle, setTicketTitle] = useState("♪ МУЗЫКАЛЬНОЕ ЛОТО");
-  const [fontSize, setFontSize] = useState(9); // Размер шрифта по умолчанию
+  const [fontSize, setFontSize] = useState(14); // Размер шрифта по умолчанию
 
   const validation = useMemo(() => validateInput(tracksInput), [tracksInput]);
 

@@ -254,7 +254,7 @@ function renderTicketToPDF(
 
   // === ЗАГОЛОВОК ===
   pdf.setTextColor(15, 23, 42); // slate-900
-  const titleFontSize = Math.min(14, maxFontSize * 1.5);
+  const titleFontSize = Math.min(20, maxFontSize * 1.8); // Увеличен максимум
   pdf.setFontSize(titleFontSize);
   
   // Используем жирный стиль если доступен (для Roboto)
@@ -273,14 +273,19 @@ function renderTicketToPDF(
   safeTitle = safeTitle.replace(/[♪♫🎵🎶]/g, "");
   
   // Вычисляем позицию для вертикального центрирования текста
-  const titleY = innerY + headerHeight / 2 + titleFontSize * 0.35;
+  // Размер шрифта в мм: fontSize * 0.3528 (приблизительно)
+  const fontHeightMm = titleFontSize * 0.3528;
+  // Центр шапки минус половина высоты текста плюс смещение к baseline
+  const titleY = innerY + (headerHeight + fontHeightMm * 0.5) / 2;
   
   // Если был символ ноты - рисуем его как графику
   let titleStartX = innerX + 4;
   if (hasNoteSymbol) {
-    // Рисуем музыкальную ноту программно
-    drawMusicNote(pdf, titleStartX + 2, innerY + headerHeight / 2, titleFontSize * 0.6);
-    titleStartX += titleFontSize * 0.8 + 2;
+    // Рисуем музыкальную ноту программно (размер примерно как заглавная буква)
+    const noteSize = titleFontSize * 0.45; // Размер ноты
+    // Центрируем ноту по вертикали с текстом (поднимаем выше)
+    drawMusicNote(pdf, titleStartX + noteSize * 0.5, innerY + headerHeight / 2 - noteSize * 0.3, noteSize);
+    titleStartX += noteSize * 0.8 + 2;
   }
   
   pdf.text(safeTitle.trim(), titleStartX, titleY);
@@ -295,29 +300,30 @@ function renderTicketToPDF(
   }
 
   // === ID БИЛЕТА ===
-  const idFontSize = 9;
+  const idFontSize = 9; // Размер шрифта ID
   pdf.setFontSize(idFontSize);
   const idText = ticket.id;
   const idTextWidth = pdf.getTextWidth(idText);
-  const idPadding = 4;
+  const idPadding = 3; // Паддинг
   const idBoxWidth = idTextWidth + idPadding * 2;
+  const idBoxHeight = 5; // Компактная высота
   const idX = innerX + innerWidth - idBoxWidth - 4;
-  const idBoxHeight = headerHeight - 4;
-  const idY = innerY + (headerHeight - idBoxHeight) / 2; // Центрируем по вертикали
+  // Центрируем бокс по вертикали в шапке (немного выше центра)
+  const idY = innerY + (headerHeight - idBoxHeight) / 2 - 0.5;
   
   pdf.setFillColor(255, 255, 255);
-  pdf.setDrawColor(71, 85, 105); // slate-600
-  pdf.setLineWidth(0.4);
+  pdf.setDrawColor(0, 0, 0); // Чёрная рамка
+  pdf.setLineWidth(0.5);
   pdf.roundedRect(idX, idY, idBoxWidth, idBoxHeight, 1.5, 1.5, "FD");
-  pdf.setTextColor(51, 65, 85); // slate-700
+  pdf.setTextColor(0, 0, 0); // Чёрный текст
   
-  // Центрируем текст ID внутри бокса
-  const idTextY = idY + idBoxHeight / 2 + idFontSize * 0.35;
+  // Центрируем текст ID внутри бокса (baseline + примерно 70% высоты шрифта)
+  const idTextY = idY + idBoxHeight / 2 + idFontSize * 0.25;
   pdf.text(idText, idX + idPadding, idTextY);
 
   // === ТАБЛИЦА ===
-  pdf.setDrawColor(100, 116, 139); // slate-500
-  pdf.setLineWidth(0.25);
+  pdf.setDrawColor(0, 0, 0); // Чёрные линии
+  pdf.setLineWidth(0.4); // Увеличена толщина для лучшей видимости
 
   // Рисуем горизонтальные линии сетки
   for (let row = 0; row <= ROWS; row++) {
@@ -332,8 +338,8 @@ function renderTicketToPDF(
   }
 
   // Рисуем внешнюю рамку таблицы толще
-  pdf.setDrawColor(51, 65, 85); // slate-700
-  pdf.setLineWidth(0.5);
+  pdf.setDrawColor(0, 0, 0); // Чёрная рамка
+  pdf.setLineWidth(0.7); // Увеличена толщина рамки
   pdf.rect(innerX, tableY, innerWidth, tableHeight);
 
   // === СОДЕРЖИМОЕ ЯЧЕЕК ===
@@ -471,41 +477,46 @@ function splitTextToLines(pdf: jsPDF, text: string, maxWidth: number): string[] 
 }
 
 /**
- * Рисует музыкальную ноту (♪) программно
+ * Рисует музыкальную ноту (♪) программно - красивая версия с кривыми Безье
  * @param pdf - jsPDF instance
  * @param x - центр ноты по X
  * @param y - центр ноты по Y  
- * @param size - размер ноты
+ * @param size - размер ноты (примерно высота заглавной буквы)
  */
 function drawMusicNote(pdf: jsPDF, x: number, y: number, size: number): void {
-  // Сохраняем текущий цвет
-  const savedFillColor = pdf.getFillColor();
-  
   // Устанавливаем чёрный цвет для ноты
   pdf.setFillColor(15, 23, 42);
-  
-  // Рисуем головку ноты (эллипс/овал)
-  const headWidth = size * 0.5;
-  const headHeight = size * 0.35;
-  const headX = x;
-  const headY = y + size * 0.3;
-  
-  // jsPDF не имеет встроенного эллипса, рисуем как овальный круг
-  pdf.ellipse(headX, headY, headWidth / 2, headHeight / 2, 'F');
-  
-  // Рисуем штиль (вертикальная линия)
-  pdf.setLineWidth(size * 0.08);
   pdf.setDrawColor(15, 23, 42);
-  const stemX = headX + headWidth / 2 - size * 0.04;
-  const stemBottom = headY - headHeight / 2;
-  const stemTop = stemBottom - size * 0.8;
+  
+  // Масштабируем все элементы относительно size
+  const s = size / 12; // базовый размер 12
+  
+  // Головка ноты - эллипс под углом
+  const headCenterX = x - 1 * s;
+  const headCenterY = y + 4 * s;
+  const headRx = 2.2 * s;  // радиус по X
+  const headRy = 1.6 * s;  // радиус по Y
+  
+  // Рисуем заполненный эллипс (головка)
+  pdf.ellipse(headCenterX, headCenterY, headRx, headRy, 'F');
+  
+  // Штиль (вертикальная линия справа от головки)
+  const stemX = headCenterX + headRx - 0.3 * s;
+  const stemBottom = headCenterY - headRy * 0.3;
+  const stemTop = y - 5 * s;
+  
+  // Рисуем штиль
+  pdf.setLineWidth(0.7 * s);
   pdf.line(stemX, stemBottom, stemX, stemTop);
   
-  // Рисуем флажок (изогнутая линия вверху штиля)
-  pdf.setLineWidth(size * 0.06);
-  // Простой флажок - просто наклонная линия
-  pdf.line(stemX, stemTop, stemX + size * 0.3, stemTop + size * 0.3);
+  // Флажок - красивая изогнутая линия
+  // Используем несколько линий для имитации кривой
+  pdf.setLineWidth(0.6 * s);
+  const flagX = stemX;
+  const flagY = stemTop;
   
-  // Восстанавливаем цвет (если нужно)
-  // pdf.setFillColor не имеет метода восстановления, поэтому пропускаем
+  // Рисуем изогнутый флажок серией точек
+  pdf.line(flagX, flagY, flagX + 1.5 * s, flagY + 2 * s);
+  pdf.line(flagX + 1.5 * s, flagY + 2 * s, flagX + 2.5 * s, flagY + 4 * s);
+  pdf.line(flagX + 2.5 * s, flagY + 4 * s, flagX + 2.2 * s, flagY + 5 * s);
 }
