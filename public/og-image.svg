@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea"/>
+      <stop offset="100%" style="stop-color:#764ba2"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  
+  <!-- Decorative ticket pattern -->
+  <g opacity="0.1">
+    <rect x="50" y="100" width="300" height="200" rx="10" fill="white"/>
+    <rect x="850" y="330" width="300" height="200" rx="10" fill="white"/>
+  </g>
+  
+  <!-- Main ticket visualization -->
+  <g transform="translate(720, 165)">
+    <rect x="0" y="0" width="400" height="300" rx="16" fill="white" opacity="0.95"/>
+    <!-- Grid lines -->
+    <g stroke="#e0e0e0" stroke-width="2">
+      <line x1="0" y1="100" x2="400" y2="100"/>
+      <line x1="0" y1="200" x2="400" y2="200"/>
+      <line x1="44" y1="0" x2="44" y2="300"/>
+      <line x1="88" y1="0" x2="88" y2="300"/>
+      <line x1="133" y1="0" x2="133" y2="300"/>
+      <line x1="177" y1="0" x2="177" y2="300"/>
+      <line x1="222" y1="0" x2="222" y2="300"/>
+      <line x1="266" y1="0" x2="266" y2="300"/>
+      <line x1="311" y1="0" x2="311" y2="300"/>
+      <line x1="355" y1="0" x2="355" y2="300"/>
+    </g>
+    <!-- Music notes -->
+    <g fill="#667eea">
+      <ellipse cx="100" cy="180" rx="20" ry="15" transform="rotate(-15 100 180)"/>
+      <rect x="116" y="110" width="6" height="70"/>
+      <ellipse cx="200" cy="170" rx="20" ry="15" transform="rotate(-15 200 170)"/>
+      <rect x="216" y="100" width="6" height="70"/>
+      <path d="M122 110 L122 95 L222 85 L222 100 Z"/>
+    </g>
+    <!-- Number circles -->
+    <circle cx="66" cy="50" r="25" fill="#667eea"/>
+    <text x="66" y="58" text-anchor="middle" fill="white" font-size="24" font-weight="bold" font-family="Arial">7</text>
+    <circle cx="333" cy="50" r="25" fill="#764ba2"/>
+    <text x="333" y="58" text-anchor="middle" fill="white" font-size="24" font-weight="bold" font-family="Arial">42</text>
+    <circle cx="66" cy="250" r="25" fill="#764ba2"/>
+    <text x="66" y="258" text-anchor="middle" fill="white" font-size="24" font-weight="bold" font-family="Arial">15</text>
+    <circle cx="333" cy="250" r="25" fill="#667eea"/>
+    <text x="333" y="258" text-anchor="middle" fill="white" font-size="24" font-weight="bold" font-family="Arial">88</text>
+  </g>
+  
+  <!-- Logo and text -->
+  <g>
+    <!-- Music note icon -->
+    <circle cx="100" cy="315" r="60" fill="white" opacity="0.2"/>
+    <text x="100" y="340" text-anchor="middle" fill="white" font-size="60" font-family="Arial">♪</text>
+    
+    <!-- Title -->
+    <text x="180" y="290" fill="white" font-size="72" font-weight="bold" font-family="Arial, sans-serif">SING LOTO</text>
+    
+    <!-- Subtitle Russian -->
+    <text x="180" y="360" fill="white" font-size="32" font-family="Arial, sans-serif" opacity="0.9">Генератор музыкального лото</text>
+    
+    <!-- Subtitle English -->
+    <text x="180" y="400" fill="white" font-size="24" font-family="Arial, sans-serif" opacity="0.7">Music Bingo Card Generator</text>
+    
+    <!-- Features -->
+    <g fill="white" font-size="20" font-family="Arial, sans-serif" opacity="0.8">
+      <text x="180" y="480">✓ Бесплатно</text>
+      <text x="350" y="480">✓ PDF экспорт</text>
+      <text x="520" y="480">✓ До 90 треков</text>
+    </g>
+  </g>
+  
+  <!-- URL -->
+  <text x="600" y="590" text-anchor="middle" fill="white" font-size="20" font-family="Arial, sans-serif" opacity="0.6">sing-lotto.fan-side-of-mars.ovh</text>
+</svg>

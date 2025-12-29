@@ -28,6 +28,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     setIsLoaded(true);
   }, []);
 
+  // Update html lang attribute when language changes (for SEO and accessibility)
+  useEffect(() => {
+    if (isLoaded) {
+      document.documentElement.lang = language;
+    }
+  }, [language, isLoaded]);
+
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
     saveLanguage(lang);

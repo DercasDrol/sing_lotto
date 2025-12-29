@@ -8,6 +8,7 @@ import { MissedTracksSection } from "@/components/MissedTracksSection";
 import { ValidationStatus } from "@/components/ValidationStatus";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { useLanguage } from "@/components/LanguageContext";
+import { StructuredData } from "@/components/StructuredData";
 import { Ticket, Track, TicketsValidationSummary } from "@/types/ticket";
 import {
   parseTracksFromInput,
@@ -156,27 +157,29 @@ export default function Home() {
   }, [tracksInput, ticketCount, validation.isValid]);
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-slate-900 rounded-lg flex items-center justify-center">
-                <Music className="h-5 w-5 text-white" />
+    <>
+      <StructuredData />
+      <div className="min-h-screen bg-slate-50 overflow-x-hidden">
+        {/* Header */}
+        <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
+          <div className="max-w-6xl mx-auto px-3 sm:px-4 py-3 sm:py-4">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-slate-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Music className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
+                </div>
+                <div className="min-w-0">
+                  <h1 className="text-base sm:text-xl font-bold text-slate-900 truncate">{t.appTitle}</h1>
+                </div>
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-slate-900">{t.appTitle}</h1>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3">
-              <LanguageToggle />
-              {tickets.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                >
+              
+              <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                <LanguageToggle />
+                {tickets.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                  >
                   <ExportButton tickets={tickets} showTrackNumbers={showTrackNumbers} ticketTitle={ticketTitle} fontSize={fontSize} />
                 </motion.div>
               )}
@@ -186,8 +189,8 @@ export default function Home() {
       </header>
 
       {/* Main content */}
-      <main className="max-w-6xl mx-auto px-4 py-8">
-        <div className="grid gap-8">
+      <main className="max-w-6xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
+        <div className="grid gap-4 sm:gap-8 [&>*]:min-w-0">
           {/* Input form */}
           <InputSection
             tracksInput={tracksInput}
@@ -217,8 +220,8 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-slate-200 mt-auto py-6">
-        <div className="max-w-6xl mx-auto px-4 text-center text-sm text-slate-500">
+      <footer className="bg-white border-t border-slate-200 mt-auto py-4 sm:py-6">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 text-center text-xs sm:text-sm text-slate-500">
           <p className="flex items-center justify-center gap-2">
             <TicketIcon className="h-4 w-4" />
             {t.appTitle}
@@ -235,6 +238,7 @@ export default function Home() {
           </p>
         </div>
       </footer>
-    </div>
+      </div>
+    </>
   );
 }

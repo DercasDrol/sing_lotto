@@ -1,0 +1,24 @@
+# Robots.txt for Sing Loto
+# https://sing-lotto.fan-side-of-mars.ovh
+
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Disallow Next.js internal paths
+Disallow: /_next/static/
+Disallow: /api/
+
+# Sitemap location
+Sitemap: https://sing-lotto.fan-side-of-mars.ovh/sitemap.xml
+
+# Crawl-delay for polite crawling
+Crawl-delay: 1
+
+# Google specific
+User-agent: Googlebot
+Allow: /
+
+# Yandex specific
+User-agent: Yandex
+Allow: /
