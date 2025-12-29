@@ -27,6 +27,7 @@ yarn-error.log*
 
 # local env files
 .env
+.env*
 .env*.local
 
 # vercel
@@ -35,3 +36,17 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# IDE / Editor settings (may contain tokens/secrets)
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Security: never commit these
+*.key
+*.pem
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*

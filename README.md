@@ -2,6 +2,8 @@
 
 **[English](#english) | [Русский](#russian)**
 
+🌐 **Live Demo / Демо:** [https://sing-lotto.fan-side-of-mars.ovh/](https://sing-lotto.fan-side-of-mars.ovh/)
+
 ---
 
 <a name="english"></a>
