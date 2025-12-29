@@ -5,12 +5,13 @@ import { Ticket as TicketType, ROWS, COLS } from "@/types/ticket";
 import { Download, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import jsPDF from "jspdf";
+import { useLanguage } from "./LanguageContext";
 
-// Шрифты в base64 (будут загружены динамически)
+// Fonts in base64 (loaded dynamically)
 let fontsLoaded = false;
 let robotoFontBase64: string | null = null;
 let robotoBoldBase64: string | null = null;
-let notoSymbolsBase64: string | null = null; // Для символов ♪ 🎺 и т.д.
+let notoSymbolsBase64: string | null = null; // For symbols like ♪ 🎺
 
 interface ExportButtonProps {
   tickets: TicketType[];
@@ -19,12 +20,13 @@ interface ExportButtonProps {
   fontSize?: number;
 }
 
-export function ExportButton({ tickets, showTrackNumbers = true, ticketTitle = "♪ МУЗЫКАЛЬНОЕ ЛОТО", fontSize = 9 }: ExportButtonProps) {
+export function ExportButton({ tickets, showTrackNumbers = true, ticketTitle = "♪ SING LOTO", fontSize = 9 }: ExportButtonProps) {
+  const { t } = useLanguage();
   const [isExporting, setIsExporting] = useState(false);
   const [fontLoaded, setFontLoaded] = useState(fontsLoaded);
   const [fontError, setFontError] = useState(false);
 
-  // Загружаем шрифты при монтировании компонента
+  // Load fonts on component mount
   useEffect(() => {
     if (!fontsLoaded && !fontError) {
       loadAllFonts()
@@ -34,7 +36,7 @@ export function ExportButton({ tickets, showTrackNumbers = true, ticketTitle = "
         })
         .catch(() => {
           setFontError(true);
-          setFontLoaded(true); // Позволяем экспорт даже без шрифта
+          setFontLoaded(true); // Allow export even without font
         });
     }
   }, [fontError]);
@@ -45,7 +47,7 @@ export function ExportButton({ tickets, showTrackNumbers = true, ticketTitle = "
     setIsExporting(true);
 
     try {
-      // Создаем PDF в формате A4 АЛЬБОМНАЯ ориентация
+      // Create PDF in A4 LANDSCAPE orientation
       const pdf = new jsPDF({
         orientation: "landscape",
         unit: "mm",
@@ -108,11 +110,11 @@ export function ExportButton({ tickets, showTrackNumbers = true, ticketTitle = "
         }
       }
 
-      // Сохраняем PDF
-      pdf.save(`singing-lotto-${new Date().toISOString().slice(0, 10)}.pdf`);
+      // Save PDF
+      pdf.save(`sing-loto-${new Date().toISOString().slice(0, 10)}.pdf`);
     } catch (error) {
       console.error("Error exporting PDF:", error);
-      alert("Ошибка при экспорте PDF. Попробуйте ещё раз.");
+      alert("Error exporting PDF. Please try again.");
     } finally {
       setIsExporting(false);
     }
@@ -131,17 +133,17 @@ export function ExportButton({ tickets, showTrackNumbers = true, ticketTitle = "
       {isExporting ? (
         <>
           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          Экспорт...
+          {t.exporting}
         </>
       ) : !fontLoaded ? (
         <>
           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          Загрузка шрифта...
+          {t.loadingFont}
         </>
       ) : (
         <>
           <Download className="h-4 w-4 mr-2" />
-          Скачать PDF
+          {t.exportPDF}
         </>
       )}
     </Button>
@@ -375,11 +377,11 @@ function renderTicketToPDF(
   }
 
   // Рисуем внешнюю рамку таблицы толще
-  pdf.setDrawColor(0, 0, 0); // Чёрная рамка
-  pdf.setLineWidth(0.7); // Увеличена толщина рамки
+  pdf.setDrawColor(0, 0, 0); // Black border
+  pdf.setLineWidth(0.7); // Thicker frame
   pdf.rect(innerX, tableY, innerWidth, tableHeight);
 
-  // === СОДЕРЖИМОЕ ЯЧЕЕК ===
+  // === CELL CONTENT ===
   for (let row = 0; row < ROWS; row++) {
     for (let col = 0; col < COLS; col++) {
       const cell = ticket.cells[row][col];
@@ -387,30 +389,34 @@ function renderTicketToPDF(
 
       const cellX = innerX + col * cellWidth;
       const cellY = tableY + row * cellHeight;
-      const cellPadding = 1.5;
+      const cellPadding = 0.8;
       const availableWidth = cellWidth - cellPadding * 2;
+      const availableHeight = cellHeight - cellPadding * 2;
 
-      // Текст трека с адаптивным размером шрифта
+      // Track text with adaptive font size
       const trackText = cell.track.name;
       
-      // Вычисляем адаптивный размер шрифта для текста
-      const pdfMaxFontSize = maxFontSize * 1.2; // Увеличиваем базовый размер для PDF
-      const adaptiveFontSize = fitTextToCell(pdf, trackText, availableWidth, pdfMaxFontSize, 5);
+      // Calculate adaptive font size - slightly smaller if showing numbers
+      const pdfMaxFontSize = showTrackNumbers ? maxFontSize * 1.0 : maxFontSize * 1.2;
+      const adaptiveFontSize = fitTextToCell(pdf, trackText, availableWidth, availableHeight, pdfMaxFontSize, 5, showTrackNumbers);
       pdf.setFontSize(adaptiveFontSize);
 
-      // Разбиваем текст на строки
+      // Split text into lines
       const lines = splitTextToLines(pdf, trackText, availableWidth);
-      const lineHeight = adaptiveFontSize * 0.4;
+      const lineHeight = adaptiveFontSize * 0.38;
       
-      // Вычисляем высоту контента для центрирования
-      const numberFontSize = showTrackNumbers ? Math.max(adaptiveFontSize * 0.7, 5) : 0;
-      const numberHeight = showTrackNumbers ? numberFontSize * 0.5 + 1 : 0;
+      // Фиксированный размер номера трека (не зависит от размера текста)
+      // 10px превью / 3 scale ≈ 3.33mm ≈ 9.5pt (округляем до 9pt для PDF)
+      const numberFontSize = showTrackNumbers ? 9 : 0; // pt - фиксированный
+      const numberHeight = showTrackNumbers ? numberFontSize * 0.35 : 0;
+      
+      // Calculate total content height for centering
       const totalContentHeight = lines.length * lineHeight + numberHeight;
       
-      // Центрируем по вертикали
-      const textStartY = cellY + (cellHeight - totalContentHeight) / 2 + adaptiveFontSize * 0.35;
+      // Center vertically
+      const textStartY = cellY + (cellHeight - totalContentHeight) / 2 + adaptiveFontSize * 0.28;
 
-      // Рисуем текст трека
+      // Draw track text
       pdf.setTextColor(15, 23, 42);
       for (let i = 0; i < lines.length; i++) {
         const lineWidth = pdf.getTextWidth(lines[i]);
@@ -418,14 +424,15 @@ function renderTicketToPDF(
         pdf.text(lines[i], lineX, textStartY + i * lineHeight);
       }
 
-      // Номер трека
+      // Track number
       if (showTrackNumbers) {
         pdf.setFontSize(numberFontSize);
         pdf.setTextColor(100, 116, 139); // slate-500
         const numberText = `#${cell.track.id}`;
         const numberWidth = pdf.getTextWidth(numberText);
         const numberX = cellX + (cellWidth - numberWidth) / 2;
-        const numberY = textStartY + lines.length * lineHeight + 1.5;
+        // marginTop: 0.3px превью / 3 scale ≈ 0.1mm в PDF
+        const numberY = textStartY + lines.length * lineHeight + 0.1;
         pdf.text(numberText, numberX, numberY);
       }
     }
@@ -433,22 +440,28 @@ function renderTicketToPDF(
 }
 
 /**
- * Подбирает размер шрифта, чтобы текст влез в ячейку
- * Учитывает как ширину отдельных слов, так и общую ширину строк после разбиения
+ * Fits text to cell by finding optimal font size
+ * Considers both width of words, total width of lines, AND total height
  */
 function fitTextToCell(
   pdf: jsPDF,
   text: string,
   maxWidth: number,
+  maxHeight: number,
   maxFontSize: number,
-  minFontSize: number = 5
+  minFontSize: number = 5,
+  showTrackNumbers: boolean = false
 ): number {
   let fontSize = maxFontSize;
+  
+  // Фиксированный размер номера трека (10px превью ≈ 9pt в PDF)
+  const numberFontSize = 9; // pt
+  const numberHeight = showTrackNumbers ? numberFontSize * 0.35 + 0.1 : 0; // включая marginTop
   
   while (fontSize > minFontSize) {
     pdf.setFontSize(fontSize);
     
-    // Проверяем, влезает ли самое длинное слово
+    // Check if longest word fits in width
     const words = text.split(/\s+/);
     let allWordsFit = true;
     
@@ -460,7 +473,7 @@ function fitTextToCell(
     }
     
     if (allWordsFit) {
-      // Проверяем также что строки после разбиения не слишком длинные
+      // Check that lines after splitting fit in width
       const lines = splitTextToLines(pdf, text, maxWidth);
       let allLinesFit = true;
       
@@ -472,7 +485,13 @@ function fitTextToCell(
       }
       
       if (allLinesFit) {
-        return fontSize;
+        // Check height: text + number must fit
+        const lineHeight = fontSize * 0.38;
+        const totalHeight = lines.length * lineHeight + numberHeight;
+        
+        if (totalHeight <= maxHeight) {
+          return fontSize;
+        }
       }
     }
     

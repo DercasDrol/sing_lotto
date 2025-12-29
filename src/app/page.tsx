@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { InputSection } from "@/components/InputSection";
 import { TicketGrid } from "@/components/TicketGrid";
 import { ExportButton } from "@/components/ExportButton";
 import { MissedTracksSection } from "@/components/MissedTracksSection";
 import { ValidationStatus } from "@/components/ValidationStatus";
+import { LanguageToggle } from "@/components/LanguageToggle";
+import { useLanguage } from "@/components/LanguageContext";
 import { Ticket, Track, TicketsValidationSummary } from "@/types/ticket";
 import {
   parseTracksFromInput,
@@ -110,15 +112,27 @@ Simple Minds - Don't You (Forget About Me)
 INXS - Need You Tonight`;
 
 export default function Home() {
+  const { t, language } = useLanguage();
+  
   const [tracksInput, setTracksInput] = useState(EXAMPLE_TRACKS);
   const [ticketCount, setTicketCount] = useState(6);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [missedTracks, setMissedTracks] = useState<Track[]>([]);
   const [ticketsValidation, setTicketsValidation] = useState<TicketsValidationSummary | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [showTrackNumbers, setShowTrackNumbers] = useState(false); // Выключен по умолчанию
-  const [ticketTitle, setTicketTitle] = useState("♪ МУЗЫКАЛЬНОЕ ЛОТО");
-  const [fontSize, setFontSize] = useState(14); // Размер шрифта по умолчанию
+  const [showTrackNumbers, setShowTrackNumbers] = useState(false);
+  const [ticketTitle, setTicketTitle] = useState("♪ SING LOTO");
+  const [fontSize, setFontSize] = useState(14);
+
+  // Update default ticket title when language changes
+  useEffect(() => {
+    // Only set default if user hasn't customized it
+    const defaultEn = "♪ SING LOTO";
+    const defaultRu = "♪ ПОЙ-ЛОТО";
+    if (ticketTitle === defaultEn || ticketTitle === defaultRu) {
+      setTicketTitle(t.defaultTicketTitle);
+    }
+  }, [language, t.defaultTicketTitle, ticketTitle]);
 
   const validation = useMemo(() => validateInput(tracksInput), [tracksInput]);
 
@@ -143,7 +157,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Хедер */}
+      {/* Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
@@ -152,27 +166,29 @@ export default function Home() {
                 <Music className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-slate-900">Singing Lotto</h1>
-                <p className="text-xs text-slate-500">Генератор музыкальных билетов</p>
+                <h1 className="text-xl font-bold text-slate-900">{t.appTitle}</h1>
               </div>
             </div>
             
-            {tickets.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-              >
-                <ExportButton tickets={tickets} showTrackNumbers={showTrackNumbers} ticketTitle={ticketTitle} fontSize={fontSize} />
-              </motion.div>
-            )}
+            <div className="flex items-center gap-3">
+              <LanguageToggle />
+              {tickets.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                >
+                  <ExportButton tickets={tickets} showTrackNumbers={showTrackNumbers} ticketTitle={ticketTitle} fontSize={fontSize} />
+                </motion.div>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Основной контент */}
+      {/* Main content */}
       <main className="max-w-6xl mx-auto px-4 py-8">
         <div className="grid gap-8">
-          {/* Форма ввода */}
+          {/* Input form */}
           <InputSection
             tracksInput={tracksInput}
             setTracksInput={setTracksInput}
@@ -189,23 +205,23 @@ export default function Home() {
             isGenerating={isGenerating}
           />
 
-          {/* Предупреждение о непопавших треках */}
+          {/* Missed tracks warning */}
           <MissedTracksSection missedTracks={missedTracks} />
 
-          {/* Статус валидации билетов */}
+          {/* Tickets validation status */}
           <ValidationStatus validation={ticketsValidation} />
 
-          {/* Превью билетов */}
+          {/* Ticket preview */}
           <TicketGrid tickets={tickets} showTrackNumbers={showTrackNumbers} ticketTitle={ticketTitle} fontSize={fontSize} />
         </div>
       </main>
 
-      {/* Футер */}
+      {/* Footer */}
       <footer className="bg-white border-t border-slate-200 mt-auto py-6">
         <div className="max-w-6xl mx-auto px-4 text-center text-sm text-slate-500">
           <p className="flex items-center justify-center gap-2">
             <TicketIcon className="h-4 w-4" />
-            Singing Lotto — Музыкальное бинго в стиле Русского Лото
+            {t.appTitle}
           </p>
         </div>
       </footer>

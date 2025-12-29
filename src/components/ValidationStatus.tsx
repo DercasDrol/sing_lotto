@@ -4,12 +4,14 @@ import { TicketsValidationSummary } from "@/types/ticket";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, XCircle, AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
+import { useLanguage } from "./LanguageContext";
 
 interface ValidationStatusProps {
   validation: TicketsValidationSummary | null;
 }
 
 export function ValidationStatus({ validation }: ValidationStatusProps) {
+  const { t } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(false);
 
   if (!validation || validation.totalTickets === 0) {
@@ -28,7 +30,7 @@ export function ValidationStatus({ validation }: ValidationStatusProps) {
           : "bg-red-50 border-red-300"
       }`}
     >
-      {/* Заголовок */}
+      {/* Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full flex items-center justify-between p-4 text-left"
@@ -41,10 +43,10 @@ export function ValidationStatus({ validation }: ValidationStatusProps) {
           )}
           <div>
             <h3 className={`font-semibold ${isAllValid ? "text-green-800" : "text-red-800"}`}>
-              {isAllValid ? "Все билеты валидны" : "Обнаружены ошибки в билетах"}
+              {isAllValid ? t.validationAllValid : t.validationErrorsFound}
             </h3>
             <p className={`text-sm ${isAllValid ? "text-green-600" : "text-red-600"}`}>
-              {validation.validTickets} из {validation.totalTickets} билетов прошли проверку
+              {validation.validTickets} {t.validationPassedCount.replace("{total}", String(validation.totalTickets))}
             </p>
           </div>
         </div>
@@ -52,7 +54,7 @@ export function ValidationStatus({ validation }: ValidationStatusProps) {
         {!isAllValid && (
           <div className="flex items-center gap-2">
             <span className="text-sm text-red-600">
-              {validation.invalidTickets} с ошибками
+              {validation.invalidTickets} {t.validationWithErrors}
             </span>
             {isExpanded ? (
               <ChevronUp className="h-5 w-5 text-red-500" />
@@ -63,7 +65,7 @@ export function ValidationStatus({ validation }: ValidationStatusProps) {
         )}
       </button>
 
-      {/* Детали ошибок */}
+      {/* Error details */}
       <AnimatePresence>
         {isExpanded && !isAllValid && (
           <motion.div
@@ -88,22 +90,23 @@ export function ValidationStatus({ validation }: ValidationStatusProps) {
                   <ul className="text-sm text-red-600 space-y-1 ml-6">
                     {detail.errors.invalidRowCounts.length > 0 && (
                       <li>
-                        ❌ Неверное количество ячеек в строках:{" "}
-                        {detail.errors.invalidRowCounts
-                          .map((r) => `строка ${r.row + 1}: ${r.count} вместо 5`)
+                        ❌ {detail.errors.invalidRowCounts
+                          .map((r) => t.validationRowError
+                            .replace("{row}", String(r.row + 1))
+                            .replace("{count}", String(r.count)))
                           .join(", ")}
                       </li>
                     )}
                     
                     {detail.errors.duplicateTracks.length > 0 && (
                       <li>
-                        ❌ Дублирующиеся треки: #{detail.errors.duplicateTracks.join(", #")}
+                        ❌ {t.validationDuplicates}: #{detail.errors.duplicateTracks.join(", #")}
                       </li>
                     )}
                     
                     {detail.errors.fullColumnsExceeded && (
                       <li>
-                        ❌ Слишком много полных колонок: {detail.errors.fullColumnsCount} (макс. 1)
+                        ❌ {t.validationTooManyColumns.replace("{count}", String(detail.errors.fullColumnsCount))}
                       </li>
                     )}
                   </ul>
@@ -114,13 +117,13 @@ export function ValidationStatus({ validation }: ValidationStatusProps) {
         )}
       </AnimatePresence>
 
-      {/* Сводка критериев валидации */}
+      {/* Validation criteria summary */}
       {isAllValid && (
         <div className="px-4 pb-4">
           <div className="text-xs text-green-600 space-y-1">
-            <p>✓ В каждой строке ровно 5 заполненных ячеек</p>
-            <p>✓ Нет дублирующихся треков в билетах</p>
-            <p>✓ Не более 1 полностью заполненной колонки на билет</p>
+            <p>{t.validationCriteria1}</p>
+            <p>{t.validationCriteria2}</p>
+            <p>{t.validationCriteria3}</p>
           </div>
         </div>
       )}

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Music2, AlertCircle, CheckCircle2, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLanguage } from "./LanguageContext";
 
 interface InputSectionProps {
   tracksInput: string;
@@ -42,33 +43,35 @@ export function InputSection({
   validation,
   isGenerating,
 }: InputSectionProps) {
+  const { t } = useLanguage();
+  
   return (
     <Card className="border-2 border-slate-400 shadow-sm">
       <CardHeader className="pb-4 border-b-2 border-slate-300">
         <CardTitle className="flex items-center gap-2 text-slate-900">
           <Music2 className="h-5 w-5" />
-          Генератор билетов
+          {t.inputSectionTitle}
         </CardTitle>
         <CardDescription>
-          Введите 90 артистов или треков (по одному на строку)
+          {t.inputHelp}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="relative">
           <Textarea
-            placeholder={`Пример:\n1. Queen - Bohemian Rhapsody\n2. ABBA - Dancing Queen\n3. Michael Jackson - Thriller\n...\n90. The Beatles - Yesterday`}
+            placeholder={t.inputPlaceholder}
             value={tracksInput}
             onChange={(e) => setTracksInput(e.target.value)}
             className="min-h-[200px] font-mono text-sm resize-none border-2 border-slate-400 focus:border-slate-600 focus:ring-slate-600"
           />
           
-          {/* Счётчик строк */}
+          {/* Counter */}
           <div className="absolute bottom-3 right-3 text-xs font-mono text-slate-400 bg-white px-2 py-1 rounded shadow-sm border">
             {validation.trackCount}/90
           </div>
         </div>
 
-        {/* Статус валидации */}
+        {/* Validation status */}
         <AnimatePresence mode="wait">
           <motion.div
             key={validation.message}
@@ -86,19 +89,19 @@ export function InputSection({
             ) : (
               <AlertCircle className="h-4 w-4 flex-shrink-0" />
             )}
-            {validation.message}
+            {validation.trackCount} {t.validTracksCount} {!validation.isValid && `(${t.needMoreTracks})`}
           </motion.div>
         </AnimatePresence>
 
-        {/* Настройки и кнопка генерации */}
+        {/* Settings and generate button */}
         <div className="flex flex-col gap-4">
           <div className="flex-1">
             <label className="text-sm font-medium text-slate-700 mb-1.5 block">
-              Заголовок билета
+              {t.ticketTitle}
             </label>
             <Input
               type="text"
-              placeholder="♪ МУЗЫКАЛЬНОЕ ЛОТО"
+              placeholder={t.defaultTicketTitle}
               value={ticketTitle}
               onChange={(e) => setTicketTitle(e.target.value)}
               className="border-2 border-slate-400 focus:border-slate-600 focus:ring-slate-600"
@@ -108,7 +111,7 @@ export function InputSection({
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <label className="text-sm font-medium text-slate-700 mb-1.5 block">
-                Количество билетов
+                {t.ticketCount}
               </label>
               <Input
                 type="number"
@@ -121,7 +124,7 @@ export function InputSection({
             </div>
             <div className="flex-1">
               <label className="text-sm font-medium text-slate-700 mb-1.5 block">
-                Размер шрифта (px)
+                {t.fontSize}
               </label>
               <Input
                 type="number"
@@ -132,7 +135,7 @@ export function InputSection({
                 className="border-2 border-slate-400 focus:border-slate-600 focus:ring-slate-600"
               />
             </div>          
-          {/* Чекбокс для номеров треков */}
+          {/* Checkbox for track numbers */}
           <div className="flex items-center gap-2 sm:mt-6">
             <input
               type="checkbox"
@@ -142,7 +145,7 @@ export function InputSection({
               className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
             />
             <label htmlFor="showNumbers" className="text-sm text-slate-700 select-none cursor-pointer">
-              Показывать номера треков
+              {t.showTrackNumbers}
             </label>
           </div>
           
@@ -161,12 +164,12 @@ export function InputSection({
                   >
                     <Sparkles className="h-4 w-4" />
                   </motion.div>
-                  Генерация...
+                  {t.generating}
                 </>
               ) : (
                 <>
                   <Sparkles className="h-4 w-4 mr-2" />
-                  Сгенерировать
+                  {t.generateTickets}
                 </>
               )}
             </Button>
