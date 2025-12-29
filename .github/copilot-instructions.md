@@ -1,70 +1,122 @@
-# Copilot / AI agents — инструкции для работы с репозиторием `sing_loto`
+# Copilot / AI Agents — Instructions for `sing_loto` Repository
 
-Кратко: этот репозиторий — фронтенд веб‑приложение на Next.js (App Router) + TypeScript для генерации билетов «Музыкальное Лото». AI‑агентам нужно работать как с UI‑компонентами, так и с алгоритмической логикой в `src/lib`.
+## Overview
+This repository is a frontend web application built with Next.js 14 (App Router) + TypeScript for generating "Music Lotto" (Sing Loto) bingo tickets. AI agents work with both UI components and algorithmic logic in `src/lib`.
 
-Общие правила взаимодействия с пользователем
-- ВСЕ вопросы, подтверждения или уточнения у пользователя должны задаваться через инструмент `mcp_interactive-m_ask_user_text` (язык по умолчанию — русский). Не отправлять в чат прямые вопросы без использования инструмента.
-- Перед внесением изменений в код обязательно получить подтверждение от пользователя (краткий да/нет либо выбор опций).
+## User Interaction Rules
+- ALL questions, confirmations, or clarifications to the user MUST be done via the `mcp_interactive-m_ask_user_text` tool (default language: Russian). Do not send direct questions in chat without using the tool.
+- Before making code changes, always get user confirmation (yes/no or option selection).
+- Cannot end the session without explicit user confirmation via `mcp_interactive-m_ask_user_text` that the result is satisfactory.
 
-Краткая архитектура и «где что»: (ключевые файлы/папки)
-- `next` (Next.js 14, App Router) — точки входа:
-  - `src/app/layout.tsx` — глобальные шрифты/метаданные
-  - `src/app/page.tsx` — главная страница, объединяет UI и логику генерации
-- UI:
-  - `src/components/` — 주요 компоненты (InputSection, Ticket, TicketGrid, ExportButton, MissedTracksSection)
-  - `src/components/ui/` — примитивы/шаблоны (shadcn style)
-- Логика генерации билетов:
-  - `src/lib/ticketLogic.ts` — основной алгоритм (parseTracksFromInput, generateTicket, generateTickets, getMissedTracks, validateInput)
-    - Важно: алгоритм гарантирует покрытие 90 треков, распределение по колонкам и строки 3×9 с 5 элементами в ряду.
-- Утилиты и типы:
-  - `src/lib/utils.ts` — helper `cn` (clsx + tailwind-merge)
-  - `src/types/ticket.ts` — все константы (COLUMN_RANGES, ROWS, COLS, ITEMS_PER_ROW) и типы Track/Ticket
-- Экспорт в PDF:
-  - `src/components/ExportButton.tsx` — рендер билета в чистый HTML + `html2canvas` -> `jsPDF`; здесь есть специфические оптимизации (scale, JPEG качество, A4 landscape, два билета на страницу). Тестирование экспорта требует браузерного окружения (не запускать на Node-only сервере). Требует переделки в текстовый PDF, а не картинку.
+## Architecture Overview
 
-Как быстро запустить/проверить локально
-- Установка и dev:
-  - `npm install`
-  - `npm run dev` (Next dev server, используй строго с портом 3010: http://localhost:3010)
-- Сборка/старт prod:
-  - `npm run build` then `npm run start`
-- Линтер: `npm run lint`
+### Entry Points (Next.js 14, App Router)
+- `src/app/layout.tsx` — global fonts/metadata, LanguageProvider wrapper
+- `src/app/page.tsx` — main page, combines UI and generation logic
 
-Проектные конвенции и паттерны, важные для AI
-- Большинство компонентов — client components (в начале файлов: `"use client"`). Изменения в них — клиент‑ориентированные. Не переносите код, подразумевающий DOM, на сервер без явной мотивации.
-- CSS/Tailwind: проект использует Tailwind + локальные шрифты (подключены в `src/app/layout.tsx`). При генерации HTML для PDF компонент `ExportButton` формирует инлайн‑стили — не менять их без проверки рендеринга через html2canvas.
-- ID/диапазоны треков: логика жёстко связана с `src/types/ticket.ts` (COLUMN_RANGES). Любые изменения диапазонов нужно синхронизировать с алгоритмом в `ticketLogic.ts`.
-- Функциональные разделы:
-  - Парсинг входа: `parseTracksFromInput` ожидает строки по одной на трек и ограничение 90 треков.
-  - Валидация: `validateInput` возвращает { isValid, trackCount, message } — UI полагается на это.
-- Состояние и UX: `src/app/page.tsx` хранит настройки билета (количество, заголовок, размер шрифта, showTrackNumbers) и вызывает `generateTickets` через callback. Изменения API функции должны учитывать обратную совместимость с этой страной.
+### UI Components
+- `src/components/` — main components:
+  - `InputSection` — track input form with validation
+  - `Ticket` — single ticket preview with adaptive font sizing
+  - `TicketGrid` — grid of ticket previews
+  - `ExportButton` — PDF export functionality
+  - `MissedTracksSection` — displays tracks not covered
+  - `ValidationStatus` — ticket validation display
+  - `LanguageToggle` — EN/RU language switcher
+  - `LanguageContext` — React context for i18n
+- `src/components/ui/` — primitives/templates (shadcn style)
 
-Тонкости и вещи, на которые нужно обратить внимание
-- PDF рендеринг 
-  - нужен на выходе текстовый формат, а не картиночный. В таком случае маштабирование и качество шрифтов улучшаются, а размер файла уменьшается.
-  
-- Алгоритмические допущения
-  - `generateTickets` старается покрыть все 90 треков, заменяя треки в последних билетах, если что-то осталось непокрытым. Изменения логики рандома/приоритета должны сохранять поведение покрытия и допустимое число полностью заполненных колонок (<=1).
-- Клиентская логика — нет серверных API. Если нужно добавить серверную обработку, убедитесь, что поведение UI и ожидания типов не ломаются.
+### Ticket Generation Logic
+- `src/lib/ticketLogic.ts` — main algorithm:
+  - `parseTracksFromInput` — parses text input to Track[]
+  - `generateTicket` — generates single ticket
+  - `generateTickets` — generates multiple tickets with track coverage
+  - `getMissedTracks` — finds tracks not used in any ticket
+  - `validateInput` — validates input text
+  - `validateTickets` — validates generated tickets
+  - **Important**: Algorithm guarantees 90 track coverage, column distribution, and 3×9 grid with 5 items per row.
 
-Примеры конкретных задач и файлов для их выполнения
-- Изменить поведение генерации при нехватке уникальных треков: править `src/lib/ticketLogic.ts` (поиск функций `generateTickets` и `generateTicket`).
-- Поправить экспорт в PDF (положение, шрифт, качество): `src/components/ExportButton.tsx`, особенно `renderTicketHTML` и параметры html2canvas/jsPDF.
-- Поменять глобальные шрифты/семейства: `src/app/layout.tsx` (локальные файлы в `src/app/fonts`).
+### Utilities and Types
+- `src/lib/utils.ts` — helper `cn` (clsx + tailwind-merge)
+- `src/lib/i18n.ts` — translations and language utilities
+- `src/types/ticket.ts` — constants (COLUMN_RANGES, ROWS, COLS, ITEMS_PER_ROW) and types Track/Ticket
 
-Метки при создании PR / сообщения об изменениях
-- В заголовке PR/коммита указывайте кратко: что и почему (например: "fix: reduce pdf size by using JPEG and scale=2 in ExportButton").
-- Если изменение затрагивает поведение генерации билетов — в описании укажите: краткое объяснение алгоритма, почему нужно изменение, и пример входных данных для проверки.
+### PDF Export
+- `src/components/ExportButton.tsx` — vector text PDF rendering with jsPDF
+  - Roboto font (with Cyrillic support) loaded via jsDelivr CDN
+  - Noto Sans Symbols for music notes (♪ ♫)
+  - A4 landscape, 2 tickets per page
+  - Dashed cut lines between tickets
 
-Ссылки на вспомогательные инструкции
-- Дополнительный локальный файл с правилами (создан ранее): `.github/instructions/copilot_instructions.md` — содержит жёсткое требование по использованию `mcp_interactive-m_ask_user_text`.
+## Quick Start
 
-Если что-то неясно или вы хотите, чтобы я добавил примеры тестов/плейбуков для ключевых функций (например, тест набора входных треков и проверки покрытия всех 90 ID), подтвердите через `mcp_interactive-m_ask_user_text` и укажите предпочитаемую глубину (smoke / unit / integration). 
+### Development
+```bash
+npm install
+npm run dev  # Dev server at http://localhost:3010
+```
 
-Общее правило
-- ВСЕ вопросы, подтверждения, запросы параметров или пояснений должны выполняться исключительно через инструмент `mcp_interactive-m_ask_user_text`.
-- Нельзя отправлять вопросы напрямую в основной чат без использования этого инструмента.
-- Нельзя закончить сессию без получения явного подтверждения от пользователя через инструмент `mcp_interactive-m_ask_user_text`, что результат его удовлетворяет
+### Production
+```bash
+npm run build
+npm run start
+```
 
-Язык по умолчанию
-- Использовать русский язык (`ru`) по умолчанию, если пользователь явно не указал другой предпочтительный язык.
+### Linting
+```bash
+npm run lint
+```
+
+## Project Conventions
+
+### Code Style
+- All comments MUST be in English
+- Most components are client components (`"use client"`)
+- CSS/Tailwind with local fonts (Roboto)
+- Scale factor: 3px = 1mm for web preview proportions
+
+### i18n System
+- English is the default language
+- Language stored in localStorage
+- Translations in `src/lib/i18n.ts`
+- LanguageContext provides `language`, `setLanguage`, `t` (translations)
+
+### Ticket Rules (Russian Lotto)
+- 3 rows × 9 columns grid
+- Exactly 5 filled cells per row (15 total)
+- Maximum 1 fully filled column
+- No duplicate tracks in a ticket
+- Track IDs 1-90 distributed across columns by ranges
+
+### Column Ranges (from `ticket.ts`)
+- Column 0: 1-9
+- Column 1: 10-19
+- Column 2: 20-29
+- ...
+- Column 8: 80-90
+
+## Common Tasks
+
+### Modify ticket generation behavior
+Edit `src/lib/ticketLogic.ts` — look for `generateTickets` and `generateTicket` functions.
+
+### Fix PDF export (position, font, quality)
+Edit `src/components/ExportButton.tsx` — `renderTicketToPDF`, `fitTextToCell`, `splitTextToLines`.
+
+### Change global fonts
+Edit `src/app/layout.tsx` (font imports) and `ExportButton.tsx` (PDF fonts).
+
+### Add new translations
+Edit `src/lib/i18n.ts` — add keys to both `en` and `ru` objects.
+
+## Commit Messages
+- Use conventional commits format
+- Prefix with: `feat:`, `fix:`, `docs:`, `refactor:`, etc.
+- Example: `fix: reduce pdf size by using JPEG and scale=2 in ExportButton`
+- If change affects ticket generation, include: algorithm explanation, reason for change, example test data
+
+## GitHub Repository
+https://github.com/DercasDrol/sing_lotto
+
+## Default Language
+Use Russian (`ru`) by default for user communication, unless the user explicitly indicates a different preference.

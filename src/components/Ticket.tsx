@@ -162,8 +162,8 @@ function AdaptiveCell({
     };
   }, [fitText]);
 
-  // Фиксированный размер номера трека (не зависит от размера текста)
-  const numberFontSize = 12; // px - фиксированный (увеличен в 2 раза)
+  // Fixed track number font size (independent of text size)
+  const numberFontSize = 12; // px - fixed (doubled)
 
   return (
     <div 
@@ -220,7 +220,7 @@ export function Ticket({ ticket, index, forPrint = false, showTrackNumbers = fal
   const idFontSizePt = 9;
   const idFontSizePx = idFontSizePt * 1.33;
   
-  // Размер шрифта ячеек (в PDF используется fontSize * 1.2, переводим в px)
+  // Cell font size (in PDF uses fontSize * 1.2, convert to px)
   const cellFontSizePx = fontSize * 1.6;
   
   return (
@@ -235,13 +235,13 @@ export function Ticket({ ticket, index, forPrint = false, showTrackNumbers = fal
         border: `${0.8 * scale}px solid rgb(30, 41, 59)` // slate-800
       }}
     >
-      {/* Заголовок билета - как в PDF */}
+      {/* Ticket header - same as PDF */}
       <div 
         className="flex justify-between items-center bg-slate-100"
         style={{ 
           height: `${headerHeightPx}px`,
           padding: `0 ${4 * scale}px`
-          // Убрал borderBottom - в PDF линия идёт от таблицы
+          // Removed borderBottom - in PDF line comes from table
         }}
       >
         <h3 
@@ -269,7 +269,7 @@ export function Ticket({ ticket, index, forPrint = false, showTrackNumbers = fal
         </span>
       </div>
 
-      {/* Сетка билета - как в PDF */}
+      {/* Ticket grid - same as PDF */}
       <div 
         className="w-full"
         style={{ 

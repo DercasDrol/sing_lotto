@@ -19,7 +19,7 @@ import {
 import { motion } from "framer-motion";
 import { Music, Ticket as TicketIcon } from "lucide-react";
 
-// Пример треков для демонстрации
+// Example tracks for demonstration
 const EXAMPLE_TRACKS = `Queen - Bohemian Rhapsody
 ABBA - Dancing Queen
 Michael Jackson - Thriller
@@ -141,7 +141,7 @@ export default function Home() {
 
     setIsGenerating(true);
 
-    // Небольшая задержка для анимации
+    // Small delay for animation
     setTimeout(() => {
       const tracks = parseTracksFromInput(tracksInput);
       const generatedTickets = generateTickets(tracks, ticketCount);

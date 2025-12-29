@@ -54,7 +54,7 @@ export function ExportButton({ tickets, showTrackNumbers = true, ticketTitle = "
         format: "a4",
       });
 
-      // Добавляем шрифты с поддержкой кириллицы
+      // Add fonts with Cyrillic support
       if (robotoFontBase64) {
         pdf.addFileToVFS("Roboto-Regular.ttf", robotoFontBase64);
         pdf.addFont("Roboto-Regular.ttf", "Roboto", "normal");
@@ -69,7 +69,7 @@ export function ExportButton({ tickets, showTrackNumbers = true, ticketTitle = "
         console.warn("Roboto font not loaded, using default font");
       }
       
-      // Добавляем шрифт для символов (♪, 🎺 и т.д.)
+      // Add font for special symbols (♪, 🎣, etc.)
       if (notoSymbolsBase64) {
         pdf.addFileToVFS("NotoSansSymbols.ttf", notoSymbolsBase64);
         pdf.addFont("NotoSansSymbols.ttf", "NotoSymbols", "normal");
@@ -90,17 +90,17 @@ export function ExportButton({ tickets, showTrackNumbers = true, ticketTitle = "
         const ticket = tickets[i];
         const positionOnPage = i % ticketsPerPage;
 
-        // Добавляем новую страницу если нужно
+        // Add new page if needed
         if (i > 0 && positionOnPage === 0) {
           pdf.addPage();
         }
 
         const yOffset = marginY + positionOnPage * (ticketHeight + gapBetweenTickets);
 
-        // Рисуем билет
+        // Render ticket
         renderTicketToPDF(pdf, ticket, marginX, yOffset, ticketWidth, ticketHeight, showTrackNumbers, ticketTitle, fontSize);
 
-        // Добавляем пунктирную линию для вырезания между билетами
+        // Add dashed cut line between tickets
         if (positionOnPage === 0 && i + 1 < tickets.length) {
           const lineY = marginY + ticketHeight + gapBetweenTickets / 2;
           pdf.setDrawColor(150, 150, 150);
@@ -151,29 +151,29 @@ export function ExportButton({ tickets, showTrackNumbers = true, ticketTitle = "
 }
 
 /**
- * Загружает все необходимые шрифты: Roboto (кириллица) и Noto Sans Symbols (спецсимволы)
+ * Loads all required fonts: Roboto (Cyrillic) and Noto Sans Symbols (special characters)
  */
 async function loadAllFonts(): Promise<void> {
-  // URL'ы шрифтов через jsDelivr CDN
+  // Font URLs via jsDelivr CDN
   const robotoRegularUrl = "https://cdn.jsdelivr.net/gh/googlefonts/roboto@main/src/hinted/Roboto-Regular.ttf";
   const robotoBoldUrl = "https://cdn.jsdelivr.net/gh/googlefonts/roboto@main/src/hinted/Roboto-Bold.ttf";
-  // Noto Sans Symbols содержит музыкальные символы ♪ ♫ и многие другие
+  // Noto Sans Symbols contains music symbols ♪ ♫ and many others
   const notoSymbolsUrl = "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/notosanssymbols/NotoSansSymbols%5Bwght%5D.ttf";
   
-  // Загружаем все шрифты параллельно
+  // Load all fonts in parallel
   const results = await Promise.allSettled([
     loadSingleFont(robotoRegularUrl, "Roboto Regular"),
     loadSingleFont(robotoBoldUrl, "Roboto Bold"),
     loadSingleFont(notoSymbolsUrl, "Noto Sans Symbols")
   ]);
   
-  // Обрабатываем результаты
+  // Process results
   if (results[0].status === 'fulfilled') {
     robotoFontBase64 = results[0].value;
     console.log("✓ Roboto Regular loaded successfully");
   } else {
     console.error("✗ Failed to load Roboto Regular:", results[0].reason);
-    throw results[0].reason; // Roboto обязателен
+    throw results[0].reason; // Roboto is required
   }
   
   if (results[1].status === 'fulfilled') {
@@ -192,7 +192,7 @@ async function loadAllFonts(): Promise<void> {
 }
 
 /**
- * Загружает один шрифт и возвращает base64
+ * Loads a single font and returns base64
  */
 async function loadSingleFont(url: string, name: string): Promise<string> {
   console.log(`Loading ${name} font from: ${url}`);
@@ -208,14 +208,14 @@ async function loadSingleFont(url: string, name: string): Promise<string> {
   
   const arrayBuffer = await response.arrayBuffer();
   
-  // Проверяем что файл не пустой и это TTF
+  // Verify file is not empty and is a valid TTF
   if (arrayBuffer.byteLength < 10000) {
     throw new Error(`Font file too small (${arrayBuffer.byteLength} bytes), possibly not a valid TTF`);
   }
   
   const uint8Array = new Uint8Array(arrayBuffer);
   
-  // Конвертируем в base64
+  // Convert to base64
   let binary = "";
   const chunkSize = 8192;
   for (let j = 0; j < uint8Array.length; j += chunkSize) {
@@ -228,7 +228,7 @@ async function loadSingleFont(url: string, name: string): Promise<string> {
 }
 
 /**
- * Рисует билет напрямую в PDF (текстовый режим)
+ * Renders a ticket directly to PDF (text mode)
  */
 function renderTicketToPDF(
   pdf: jsPDF,
@@ -241,11 +241,11 @@ function renderTicketToPDF(
   ticketTitle: string,
   maxFontSize: number
 ): void {
-  const padding = 3; // Отступ внутри рамки билета
+  const padding = 3; // Padding inside ticket frame
   const headerHeight = 12;
   const cornerRadius = 3;
   
-  // Внутренние размеры
+  // Inner dimensions
   const innerX = x + padding;
   const innerY = y + padding;
   const innerWidth = width - padding * 2;
@@ -256,36 +256,36 @@ function renderTicketToPDF(
   const cellWidth = innerWidth / COLS;
   const cellHeight = tableHeight / ROWS;
 
-  // === ВНЕШНЯЯ РАМКА БИЛЕТА С ЗАКРУГЛЕНИЯМИ ===
+  // === OUTER TICKET FRAME WITH ROUNDED CORNERS ===
   pdf.setDrawColor(30, 41, 59); // slate-800
   pdf.setFillColor(255, 255, 255);
   pdf.setLineWidth(0.8);
   pdf.setLineDashPattern([], 0);
   pdf.roundedRect(x, y, width, height, cornerRadius, cornerRadius, "FD");
 
-  // === ШАПКА ===
+  // === HEADER ===
   pdf.setFillColor(241, 245, 249); // slate-100
-  // Рисуем шапку как прямоугольник внутри рамки
+  // Draw header as rectangle inside frame
   pdf.rect(innerX, innerY, innerWidth, headerHeight, "F");
   pdf.setDrawColor(30, 41, 59);
   pdf.setLineWidth(0.4);
   pdf.line(innerX, innerY + headerHeight, innerX + innerWidth, innerY + headerHeight);
 
-  // === ЗАГОЛОВОК ===
+  // === TITLE ===
   pdf.setTextColor(15, 23, 42); // slate-900
-  const titleFontSize = Math.min(20, maxFontSize * 1.8); // Увеличен максимум
-  const symbolFontSize = titleFontSize * 1.3; // Символы на 30% больше для лучшей видимости
+  const titleFontSize = Math.min(20, maxFontSize * 1.8); // Max increased
+  const symbolFontSize = titleFontSize * 1.3; // Symbols 30% larger for better visibility
   pdf.setFontSize(titleFontSize);
   
-  // Вычисляем позицию Y для центрирования текста (подняли выше)
-  // baseline текста внизу, уменьшаем смещение
+  // Calculate Y position for vertically centered text
+  // Text baseline is at bottom, reduce offset
   const titleY = innerY + headerHeight / 2 + titleFontSize * 0.08;
   
-  // Рендерим заголовок с поддержкой смешанных шрифтов (символы + кириллица)
+  // Render title with mixed font support (symbols + Cyrillic)
   let titleX = innerX + 4;
   
-  // Разбиваем текст на сегменты: символы и обычный текст
-  // Символы Unicode: музыкальные ноты, эмодзи и т.д.
+  // Split text into segments: symbols and regular text
+  // Unicode symbols: music notes, emoji, etc.
   const symbolPattern = /([♪♫🎵🎶🎺🎸🎹🎷🎻🥁🎤🎧🎼]+)/g;
   const segments = ticketTitle.split(symbolPattern);
   
@@ -293,19 +293,19 @@ function renderTicketToPDF(
     if (!segment) continue;
     
     const isSymbol = symbolPattern.test(segment);
-    // Сбрасываем pattern сразу после теста
+    // Reset pattern right after test
     symbolPattern.lastIndex = 0;
     
     if (isSymbol) {
-      // Это символы - используем Noto Sans Symbols если загружен, увеличенный размер
+      // These are symbols - use Noto Sans Symbols if loaded, larger size
       if (notoSymbolsBase64) {
         try {
           pdf.setFont("NotoSymbols", "normal");
-          pdf.setFontSize(symbolFontSize); // Увеличенный размер для символов
-          // Faux Bold: рисуем символ трижды со смещением для жирности
+          pdf.setFontSize(symbolFontSize); // Larger size for symbols
+          // Faux Bold: draw symbol three times with offset for boldness
           pdf.text(segment, titleX, titleY);
-          pdf.text(segment, titleX + 0.2, titleY); // Смещение вправо
-          pdf.text(segment, titleX + 0.1, titleY - 0.1); // Смещение по диагонали
+          pdf.text(segment, titleX + 0.2, titleY); // Offset right
+          pdf.text(segment, titleX + 0.1, titleY - 0.1); // Diagonal offset
         } catch (e) {
           console.warn("Failed to set NotoSymbols font:", e);
           pdf.text(segment, titleX, titleY);
@@ -314,7 +314,7 @@ function renderTicketToPDF(
         pdf.text(segment, titleX, titleY);
       }
     } else {
-      // Обычный текст - используем Roboto Bold
+      // Regular text - use Roboto Bold
       if (robotoBoldBase64) {
         try {
           pdf.setFont("Roboto", "bold");
@@ -322,61 +322,61 @@ function renderTicketToPDF(
           try { pdf.setFont("Roboto", "normal"); } catch { /* ignore */ }
         }
       }
-      pdf.setFontSize(titleFontSize); // Обычный размер для текста
+      pdf.setFontSize(titleFontSize); // Normal size for text
       pdf.text(segment, titleX, titleY);
     }
     
     titleX += pdf.getTextWidth(segment);
   }
   
-  // Возвращаем обычный стиль для остального текста
+  // Reset to normal style for remaining text
   if (robotoFontBase64) {
     try {
       pdf.setFont("Roboto", "normal");
     } catch {
-      // Игнорируем если не удалось
+      // Ignore if failed
     }
   }
 
-  // === ID БИЛЕТА ===
-  const idFontSize = 9; // Размер шрифта ID
+  // === TICKET ID ===
+  const idFontSize = 9; // ID font size
   pdf.setFontSize(idFontSize);
   const idText = ticket.id;
   const idTextWidth = pdf.getTextWidth(idText);
-  const idPadding = 3; // Паддинг
+  const idPadding = 3; // Padding
   const idBoxWidth = idTextWidth + idPadding * 2;
-  const idBoxHeight = 5.5; // Компактная высота
+  const idBoxHeight = 5.5; // Compact height
   const idX = innerX + innerWidth - idBoxWidth - 4;
-  // Центрируем бокс по вертикали в шапке (поднимаем на 2мм)
+  // Center box vertically in header (raised by 2mm)
   const idY = innerY + (headerHeight - idBoxHeight) / 2 - 1;
   
   pdf.setFillColor(255, 255, 255);
-  pdf.setDrawColor(0, 0, 0); // Чёрная рамка
+  pdf.setDrawColor(0, 0, 0); // Black border
   pdf.setLineWidth(0.5);
   pdf.roundedRect(idX, idY, idBoxWidth, idBoxHeight, 1.5, 1.5, "FD");
-  pdf.setTextColor(0, 0, 0); // Чёрный текст
+  pdf.setTextColor(0, 0, 0); // Black text
   
-  // Центрируем текст ID внутри бокса (точно по центру)
+  // Center ID text inside box (exactly centered)
   const idTextY = idY + idBoxHeight / 2 + idFontSize * 0.15;
   pdf.text(idText, idX + idPadding, idTextY);
 
-  // === ТАБЛИЦА ===
-  pdf.setDrawColor(0, 0, 0); // Чёрные линии
-  pdf.setLineWidth(0.4); // Увеличена толщина для лучшей видимости
+  // === TABLE ===
+  pdf.setDrawColor(0, 0, 0); // Black lines
+  pdf.setLineWidth(0.4); // Increased thickness for better visibility
 
-  // Рисуем горизонтальные линии сетки
+  // Draw horizontal grid lines
   for (let row = 0; row <= ROWS; row++) {
     const lineY = tableY + row * cellHeight;
     pdf.line(innerX, lineY, innerX + innerWidth, lineY);
   }
   
-  // Рисуем вертикальные линии сетки
+  // Draw vertical grid lines
   for (let col = 0; col <= COLS; col++) {
     const lineX = innerX + col * cellWidth;
     pdf.line(lineX, tableY, lineX, tableY + tableHeight);
   }
 
-  // Рисуем внешнюю рамку таблицы толще
+  // Draw thicker outer table frame
   pdf.setDrawColor(0, 0, 0); // Black border
   pdf.setLineWidth(0.7); // Thicker frame
   pdf.rect(innerX, tableY, innerWidth, tableHeight);
@@ -405,9 +405,9 @@ function renderTicketToPDF(
       const lines = splitTextToLines(pdf, trackText, availableWidth);
       const lineHeight = adaptiveFontSize * 0.38;
       
-      // Фиксированный размер номера трека (не зависит от размера текста)
-      // 10px превью / 3 scale ≈ 3.33mm ≈ 9.5pt (округляем до 9pt для PDF)
-      const numberFontSize = showTrackNumbers ? 9 : 0; // pt - фиксированный
+      // Fixed track number font size (independent of text size)
+      // 10px preview / 3 scale ≈ 3.33mm ≈ 9.5pt (rounded to 9pt for PDF)
+      const numberFontSize = showTrackNumbers ? 9 : 0; // pt - fixed
       const numberHeight = showTrackNumbers ? numberFontSize * 0.35 : 0;
       
       // Calculate total content height for centering
@@ -431,7 +431,7 @@ function renderTicketToPDF(
         const numberText = `#${cell.track.id}`;
         const numberWidth = pdf.getTextWidth(numberText);
         const numberX = cellX + (cellWidth - numberWidth) / 2;
-        // marginTop: 0.3px превью / 3 scale ≈ 0.1mm в PDF
+        // marginTop: 0.3px preview / 3 scale ≈ 0.1mm in PDF
         const numberY = textStartY + lines.length * lineHeight + 0.1;
         pdf.text(numberText, numberX, numberY);
       }
@@ -454,9 +454,9 @@ function fitTextToCell(
 ): number {
   let fontSize = maxFontSize;
   
-  // Фиксированный размер номера трека (10px превью ≈ 9pt в PDF)
+  // Fixed track number font size (10px preview ≈ 9pt in PDF)
   const numberFontSize = 9; // pt
-  const numberHeight = showTrackNumbers ? numberFontSize * 0.35 + 0.1 : 0; // включая marginTop
+  const numberHeight = showTrackNumbers ? numberFontSize * 0.35 + 0.1 : 0; // including marginTop
   
   while (fontSize > minFontSize) {
     pdf.setFontSize(fontSize);
@@ -502,7 +502,7 @@ function fitTextToCell(
 }
 
 /**
- * Разбивает текст на строки, чтобы каждая влезала в заданную ширину
+ * Splits text into lines so each fits within the given width
  */
 function splitTextToLines(pdf: jsPDF, text: string, maxWidth: number): string[] {
   const words = text.split(/\s+/);
@@ -519,7 +519,7 @@ function splitTextToLines(pdf: jsPDF, text: string, maxWidth: number): string[] 
       if (currentLine) {
         lines.push(currentLine);
       }
-      // Если слово само по себе не влезает, всё равно добавляем
+      // If word itself doesn't fit, add it anyway
       currentLine = word;
     }
   }
@@ -528,6 +528,6 @@ function splitTextToLines(pdf: jsPDF, text: string, maxWidth: number): string[] 
     lines.push(currentLine);
   }
 
-  // Ограничиваем количество строк до 3
+  // Limit to 3 lines max
   return lines.slice(0, 3);
 }

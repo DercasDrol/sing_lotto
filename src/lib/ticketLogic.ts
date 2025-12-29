@@ -60,26 +60,26 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 /**
- * Генерирует один билет по правилам Русского Лото
- * С мягким приоритетом для ещё не использованных треков
- * ГАРАНТИРУЕТ: ровно 5 ячеек в каждой строке, не более 1 полной колонки
+ * Generates a single ticket following Russian Lotto rules
+ * With soft priority for not yet used tracks
+ * GUARANTEES: exactly 5 cells per row, max 1 full column
  */
 export function generateTicket(
   tracks: Track[],
   ticketNumber: number,
   priorityTracks?: Set<number>,
-  priorityWeight: number = 0.3 // Мягкий приоритет (0 = нет, 1 = полный)
+  priorityWeight: number = 0.3 // Soft priority (0 = none, 1 = full)
 ): Ticket {
   const maxGlobalAttempts = 100;
   
   for (let globalAttempt = 0; globalAttempt < maxGlobalAttempts; globalAttempt++) {
-    // Шаг 1: Выбираем случайные треки для каждой колонки
+    // Step 1: Select random tracks for each column
     const selectedByColumn: Track[][] = [];
 
     for (let col = 0; col < COLS; col++) {
       const columnTracks = getTracksForColumn(tracks, col);
       
-      // Перемешиваем с мягким приоритетом для неиспользованных треков
+      // Shuffle with soft priority for unused tracks
       let sortedTracks: Track[];
       if (priorityTracks && priorityTracks.size > 0 && Math.random() < priorityWeight) {
         const priority = columnTracks.filter((t) => priorityTracks.has(t.id));
@@ -92,23 +92,23 @@ export function generateTicket(
       selectedByColumn.push(sortedTracks);
     }
 
-    // Шаг 2: Используем детерминированное распределение по колонкам
+    // Step 2: Use deterministic column distribution
     const columnCounts = generateValidColumnDistribution();
 
-    // Шаг 3: Выбираем конкретные треки для каждой колонки
+    // Step 3: Select specific tracks for each column
     const tracksPerColumn: Track[][] = columnCounts.map((count, col) => {
       return selectedByColumn[col].slice(0, count);
     });
 
-    // Шаг 4: Распределяем треки по строкам с гарантией корректности
+    // Step 4: Distribute tracks to rows with guaranteed correctness
     const grid = distributeToGridStrict(tracksPerColumn);
     
     if (grid === null) {
-      // Если не удалось — пробуем ещё раз
+      // If failed — try again
       continue;
     }
 
-    // Создаем финальную структуру билета
+    // Create final ticket structure
     const cells: TicketCell[][] = [];
     for (let row = 0; row < ROWS; row++) {
       cells[row] = [];

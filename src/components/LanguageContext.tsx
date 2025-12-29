@@ -38,7 +38,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   // Don't render children until language is loaded from localStorage
   // to prevent hydration mismatch
   if (!isLoaded) {
-    return null; // или loading spinner
+    return null; // or loading spinner
   }
 
   return (

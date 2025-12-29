@@ -15,7 +15,7 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
-// Roboto для билетов (как в PDF)
+// Roboto for tickets (same as PDF)
 const roboto = Roboto({
   subsets: ["cyrillic", "latin"],
   weight: ["400", "700"],
