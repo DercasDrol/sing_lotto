@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea"/>
+      <stop offset="100%" style="stop-color:#764ba2"/>
+    </linearGradient>
+  </defs>
+  <rect width="180" height="180" rx="40" fill="url(#bg)"/>
+  <!-- Simplified music note -->
+  <g fill="white">
+    <ellipse cx="65" cy="120" rx="18" ry="14" transform="rotate(-15 65 120)"/>
+    <rect x="79" y="60" width="6" height="60"/>
+    <ellipse cx="115" cy="112" rx="18" ry="14" transform="rotate(-15 115 112)"/>
+    <rect x="129" y="52" width="6" height="60"/>
+    <path d="M85 60 L85 48 L135 40 L135 52 Z"/>
+  </g>
+  <!-- Number badge -->
+  <circle cx="140" cy="45" r="25" fill="white"/>
+  <text x="140" y="53" text-anchor="middle" fill="#667eea" font-size="22" font-weight="bold" font-family="Arial">♪</text>
+</svg>

@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea"/>
+      <stop offset="100%" style="stop-color:#764ba2"/>
+    </linearGradient>
+  </defs>
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="240" fill="url(#bg)"/>
+  <!-- Lotto ticket background -->
+  <rect x="96" y="140" width="320" height="232" rx="16" fill="white" opacity="0.95"/>
+  <!-- Grid lines (3x9 like Russian Lotto) -->
+  <g stroke="#e0e0e0" stroke-width="2">
+    <!-- Horizontal lines -->
+    <line x1="96" y1="216" x2="416" y2="216"/>
+    <line x1="96" y1="292" x2="416" y2="292"/>
+    <!-- Vertical lines -->
+    <line x1="131" y1="140" x2="131" y2="372"/>
+    <line x1="167" y1="140" x2="167" y2="372"/>
+    <line x1="202" y1="140" x2="202" y2="372"/>
+    <line x1="238" y1="140" x2="238" y2="372"/>
+    <line x1="274" y1="140" x2="274" y2="372"/>
+    <line x1="309" y1="140" x2="309" y2="372"/>
+    <line x1="345" y1="140" x2="345" y2="372"/>
+    <line x1="380" y1="140" x2="380" y2="372"/>
+  </g>
+  <!-- Music note symbol -->
+  <g fill="#667eea">
+    <!-- Eighth note 1 -->
+    <ellipse cx="180" cy="300" rx="24" ry="18" transform="rotate(-20 180 300)"/>
+    <rect x="198" y="220" width="8" height="80"/>
+    <!-- Eighth note 2 -->
+    <ellipse cx="300" cy="290" rx="24" ry="18" transform="rotate(-20 300 290)"/>
+    <rect x="318" y="210" width="8" height="80"/>
+    <!-- Beam connecting notes -->
+    <path d="M206 220 L206 200 L326 190 L326 210 Z" fill="#667eea"/>
+  </g>
+  <!-- Number circles (representing lotto numbers) -->
+  <g>
+    <circle cx="148" cy="178" r="20" fill="#667eea"/>
+    <text x="148" y="185" text-anchor="middle" fill="white" font-size="20" font-weight="bold" font-family="Arial">7</text>
+    
+    <circle cx="364" cy="178" r="20" fill="#764ba2"/>
+    <text x="364" y="185" text-anchor="middle" fill="white" font-size="20" font-weight="bold" font-family="Arial">42</text>
+    
+    <circle cx="148" cy="330" r="20" fill="#764ba2"/>
+    <text x="148" y="337" text-anchor="middle" fill="white" font-size="20" font-weight="bold" font-family="Arial">15</text>
+    
+    <circle cx="364" cy="330" r="20" fill="#667eea"/>
+    <text x="364" y="337" text-anchor="middle" fill="white" font-size="20" font-weight="bold" font-family="Arial">88</text>
+  </g>
+</svg>

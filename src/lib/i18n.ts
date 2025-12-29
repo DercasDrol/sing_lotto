@@ -70,7 +70,7 @@ const en: Translations = {
   // Input section
   inputSectionTitle: "Track List",
   inputPlaceholder: "Enter tracks, one per line (90 tracks total)...\n\n1. Song Name\n2. Another Song\n...",
-  inputHelp: "Enter 90 tracks, one per line. Numbers at the beginning will be removed automatically.",
+  inputHelp: "Enter 90 tracks, one per line.",
   trackCount: "Tracks:",
   invalidInput: "Invalid input",
   
@@ -127,7 +127,7 @@ const ru: Translations = {
   // Input section
   inputSectionTitle: "Список треков",
   inputPlaceholder: "Введите треки, по одному на строку (всего 90 треков)...\n\n1. Название песни\n2. Другая песня\n...",
-  inputHelp: "Введите 90 треков, по одному на строку. Номера в начале будут удалены автоматически.",
+  inputHelp: "Введите 90 треков, по одному на строку.",
   trackCount: "Треков:",
   invalidInput: "Неверный ввод",
   

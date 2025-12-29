@@ -25,6 +25,14 @@ const roboto = Roboto({
 export const metadata: Metadata = {
   title: "Sing Loto Generator",
   description: "Music bingo ticket generator inspired by Russian Lotto",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    apple: "/apple-touch-icon.svg",
+  },
+  manifest: "/manifest.json",
+  themeColor: "#667eea",
 };
 
 export default function RootLayout({
