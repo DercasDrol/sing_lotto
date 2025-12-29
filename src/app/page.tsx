@@ -223,6 +223,16 @@ export default function Home() {
             <TicketIcon className="h-4 w-4" />
             {t.appTitle}
           </p>
+          <p className="mt-2">
+            <a 
+              href="https://github.com/DercasDrol/sing_lotto" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:text-slate-700 underline transition-colors"
+            >
+              GitHub
+            </a>
+          </p>
         </div>
       </footer>
     </div>
