@@ -185,11 +185,49 @@ export function getTranslations(lang: Language): Translations {
 // Storage key for language preference
 export const LANGUAGE_STORAGE_KEY = "sing-loto-language";
 
+/**
+ * Detects browser/system language
+ * Returns "ru" if Russian, otherwise "en"
+ */
+function detectBrowserLanguage(): Language {
+  if (typeof window === "undefined" || typeof navigator === "undefined") {
+    return "en";
+  }
+  
+  // Check navigator.language and navigator.languages
+  const browserLang = navigator.language || (navigator.languages && navigator.languages[0]);
+  
+  if (browserLang) {
+    // Check if language starts with "ru" (e.g., "ru", "ru-RU", "ru-UA")
+    if (browserLang.toLowerCase().startsWith("ru")) {
+      return "ru";
+    }
+  }
+  
+  return "en"; // Default to English for all other languages
+}
+
+/**
+ * Gets saved language from localStorage
+ * If no saved preference, detects browser language
+ */
 export function getSavedLanguage(): Language {
   if (typeof window === "undefined") return "en";
+  
   const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-  if (saved === "ru" || saved === "en") return saved;
-  return "en"; // Default to English
+  
+  // If user has previously saved a preference, use it
+  if (saved === "ru" || saved === "en") {
+    return saved;
+  }
+  
+  // First visit: detect browser language
+  const detected = detectBrowserLanguage();
+  
+  // Save detected language so we don't re-detect next time
+  localStorage.setItem(LANGUAGE_STORAGE_KEY, detected);
+  
+  return detected;
 }
 
 export function saveLanguage(lang: Language): void {
