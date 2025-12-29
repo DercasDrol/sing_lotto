@@ -1,36 +1,19 @@
 /**
- * Автотесты для алгоритма генерации билетов
- * Запуск: npm test
+ * Auto-tests for ticket generation algorithm
+ * Run: npm test
  */
 
-// Константы (дублируем из ticket.ts для независимости теста)
+// Constants (duplicated from ticket.ts for test independence)
 const ROWS = 3;
 const COLS = 9;
 const ITEMS_PER_ROW = 5;
-const TOTAL_ITEMS_PER_TICKET = 15;
-
-const COLUMN_RANGES: [number, number][] = [
-  [1, 9], [10, 19], [20, 29], [30, 39], [40, 49],
-  [50, 59], [60, 69], [70, 79], [80, 90],
-];
 
 interface Track {
   id: number;
   name: string;
 }
 
-interface TicketCell {
-  track: Track | null;
-  row: number;
-  col: number;
-}
-
-interface Ticket {
-  id: string;
-  cells: TicketCell[][];
-}
-
-// Импортируем функции напрямую (относительный путь)
+// Import functions directly (relative path)
 import {
   parseTracksFromInput,
   generateTicket,

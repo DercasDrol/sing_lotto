@@ -283,10 +283,12 @@ function generateValidColumnDistribution(): number[] {
 }
 
 /**
- * Распределяет 15 элементов по 9 колонкам
- * Каждая колонка получает 0, 1, 2 или 3 элемента
+ * Distributes 15 items across 9 columns.
+ * Each column receives 0, 1, 2, or 3 items.
+ * @deprecated This function is not used but kept for potential future use.
  */
-function distributeItemsToColumns(): number[] {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _distributeItemsToColumns(): number[] {
   const counts = new Array(COLS).fill(0);
   let remaining = TOTAL_ITEMS_PER_TICKET;
 
@@ -391,10 +393,11 @@ function distributeToGridStrict(tracksPerColumn: Track[][]): (Track | null)[][] 
 }
 
 /**
- * Проверяет, можно ли распределить элементы так,
- * чтобы в каждой строке было ровно 5
+ * Checks whether items can be distributed so that each row has exactly 5 items.
+ * @deprecated This function is not used but kept for potential future use.
  */
-function canDistributeToRows(columnCounts: number[]): boolean {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _canDistributeToRows(columnCounts: number[]): boolean {
   // Сумма должна быть 15
   const total = columnCounts.reduce((a, b) => a + b, 0);
   if (total !== TOTAL_ITEMS_PER_TICKET) return false;

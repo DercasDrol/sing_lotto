@@ -1,0 +1,90 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - master
+
+env:
+  DOCKER_IMAGE: dercasdrol/sing-lotto
+  REGISTRY: docker.io
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    # Security: Limit permissions to minimum required
+    permissions:
+      contents: read
+      packages: write
+      # Required for provenance attestations
+      id-token: write
+      attestations: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_IMAGE }}
+          tags: |
+            # Set latest tag for master branch
+            type=raw,value=latest,enable={{is_default_branch}}
+            # Tag with branch name
+            type=ref,event=branch
+            # Tag with PR number
+            type=ref,event=pr
+            # Tag with semver (v1.0.0 -> 1.0.0)
+            type=semver,pattern={{version}}
+            # Tag with major.minor (v1.0.0 -> 1.0)
+            type=semver,pattern={{major}}.{{minor}}
+            # Tag with commit SHA (short)
+            type=sha,prefix=
+
+      - name: Log in to Docker Hub
+        # Only login for push events (not for PRs from forks)
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ vars.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          # Only push for non-PR events
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+          # Enable build cache for faster builds
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          # Generate SBOM and provenance for security
+          provenance: true
+          sbom: true
+
+      - name: Summary
+        run: |
+          echo "## Docker Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ env.DOCKER_IMAGE }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tags:**" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
