@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Music2, AlertCircle, CheckCircle2, Sparkles } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "./LanguageContext";
+import { sanitizeTicketTitle, MAX_TICKET_TITLE_LENGTH } from "@/lib/security";
 
 interface InputSectionProps {
   tracksInput: string;
@@ -103,7 +104,8 @@ export function InputSection({
               type="text"
               placeholder={t.defaultTicketTitle}
               value={ticketTitle}
-              onChange={(e) => setTicketTitle(e.target.value)}
+              onChange={(e) => setTicketTitle(sanitizeTicketTitle(e.target.value))}
+              maxLength={MAX_TICKET_TITLE_LENGTH}
               className="border-2 border-slate-400 focus:border-slate-600 focus:ring-slate-600 text-sm"
             />
           </div>

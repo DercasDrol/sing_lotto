@@ -10,15 +10,17 @@ import {
   TicketValidationResult,
   TicketsValidationSummary,
 } from "@/types/ticket";
+import { sanitizeTrackName, isInputSafe } from "./security";
 
 /**
  * Парсит входной текст и создает массив треков с ID от 1 до 90
+ * Applies security sanitization to track names
  */
 export function parseTracksFromInput(input: string): Track[] {
   const lines = input
     .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
+    .map((line) => sanitizeTrackName(line))
+    .filter((line) => line.length > 0 && isInputSafe(line));
 
   return lines.slice(0, 90).map((name, index) => ({
     id: index + 1,

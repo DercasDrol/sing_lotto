@@ -235,6 +235,18 @@ export default function Home() {
             >
               GitHub
             </a>
+            {" • "}
+            <a 
+              href="https://github.com/DercasDrol/sing_lotto/blob/main/LICENSE" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:text-slate-700 underline transition-colors"
+            >
+              MIT License
+            </a>
+          </p>
+          <p className="mt-2 text-slate-400">
+            © {new Date().getFullYear()} DercasDrol
           </p>
         </div>
       </footer>
